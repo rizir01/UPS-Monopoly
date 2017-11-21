@@ -1,0 +1,8 @@
+Server_clients
+6
+admin!admin!a!1000!
+jnohac!123wsad!u!1001!
+mstrunc!mstrunc!u!1002!
+jvaverka!jvaverka!u!1003!
+zziegler!zziegler!u!1004!
+pnohac!pnohac!u!1005!

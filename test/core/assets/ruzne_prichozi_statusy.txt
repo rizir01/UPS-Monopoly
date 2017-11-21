@@ -1,0 +1,12 @@
+s!1!1!//start
+e!//end
+b!5!//buy
+l!3!//lose|kdo(index)
+p!1!25!//pay|komu(index)|kolik
+g!0!25!//getMoney|komu(index)|kolik
+d!+200!//communitychest|moznosti stavu
+c!jo!//chance|moznosti stavu
+a!b!//aukce zacatek
+a!0!150!//aukce|kdo(index)|hodnota za pozemek/stanici/utility
+a!1!k!//aukce|kdo(index) ukoncil
+h!0,0,1!//addHouse|na jakych mistech pridat pocet domu
