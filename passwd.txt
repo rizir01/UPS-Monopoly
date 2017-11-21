@@ -1,0 +1,4 @@
+//WHITELIST lidi na server, [login#heslo]
+2
+admin!admin
+nohac!nohac
