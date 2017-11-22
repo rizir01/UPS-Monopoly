@@ -9,6 +9,8 @@
 #include <pthread.h>
 #include "hrac.h"
 #include "hrac_methods.c"
+#include "lobby.h"
+#include "lobby_methods.c"
 
 //WHITELIST serveru login/heslo
 FILE *passwd;
@@ -258,6 +260,64 @@ struct Zprava rozdeleniZprav(struct Zprava z)
 	return k;
 }
 
+struct Zprava rozdeleniZpravyLobby(struct Zprava z)
+{
+	struct Zprava k;
+	k.zaznamInd = -1;
+	char front[10];
+	char back[51];
+	memset(&front, 0, sizeof(front));
+	memset(&back, 0, sizeof(back));
+	int length;
+	int naselZnacku = 0;//bool
+	for(int i = 0; i < z.length; i++)
+	{
+		if(z.msg[i] == '!')
+		{
+			naselZnacku = 1;
+			memcpy(back, &z.msg[i + 1], z.length - (i + 1));
+			break;
+		}
+		else
+		{
+			front[i] = z.msg[i];
+		}
+	}
+	if(naselZnacku == 0)
+	{
+		strcpy(k.msg, "V zadanem textu neni symbol '!'.\n");
+		k.length = strlen(k.msg);
+		k.error = 2;
+		return k;
+	}
+	printf("%s\n", front);
+	printf("%s\n", back);
+	if(strcmp(front, "refresh") == 0)
+	{
+		//Vytvorit string s naplni vsech dat z lobbies
+	}
+	else if(strcmp(front, "create") == 0)
+	{
+		//Vytvorit novou lobby s prevzatym nazvem
+	}
+	else if(strcmp(front, "join") == 0)
+	{
+		//Pridat index tohoto hrace do lobby s indexem lobby
+	}
+	else if(strcmp(front, "leave") == 0)
+	{
+		//Opusteni hrace z konkretni lobby
+	}
+	else if(strcmp(front, "discon") == 0)
+	{
+		//Odhlaseni hrace ze lobby a okamzity navrat do prihlasovaci obrazovky
+	}
+	else
+	{
+		printf("Nic z toho nesedi na %s\n", front)
+	}	
+}
+
 // telo vlakna co zprostredkuje nejdrive prijem
 //loginu a hesla a nasledne posle klientovi jestli
 //byl uspesne prihlasen, nasledne zprostredkuje chat
@@ -300,47 +360,37 @@ void *serve_request(void *arg)
 					break;
 				}
 			}	
-		}
-		printf("Uzivatel %s zazadal o chat.\n", jmeno);	
+		}	
 		send(client_socket, &z.msg, strlen(z.msg), 0);
 	}while(z.error >= 3);
-	
+		
 	if(z.error == 0)//nedoslo k chybe
 	{
+		//JSEM UZ V MENU S LOBBY
 		addHrac(client_socket, jmeno);
 		char textK[100];
 		memset(&textK, 0, sizeof(textK));
-		sprintf(textK, "$[%s]: se pripojil od chatu.\n", jmeno);
-		broadcastHrac(textK);
+		//sprintf(textK, "[%s]: se pripojil na server.\n", jmeno);
+		printf("[%s]: se pripojil na server.\n", jmeno);
 		while(1)
 		{
 			z = getMessage(client_socket);
 			if(z.error == 0)
 			{
 				printf("Prijato: %s\n", z.msg);
-				if(strcmp(z.msg, "!cc!") == 0)
-				{
-					memset(&textK, 0, sizeof(textK));
-					sprintf(textK, "$[%s]: se odpojil od chatu.\n", jmeno);
-					broadcastHrac(textK);
-					break;
-				}
-				memset(&textK, 0, sizeof(textK));
-				sprintf(textK, "$[%s]: %s\n", jmeno, z.msg); 
-				broadcastHrac(textK);	
+					
 			}
 			else
 			{
 				if(z.error == 2)
 				{
-					memset(&textK, 0, sizeof(textK));
-					sprintf(textK, "$[%s]: se odpojil od chatu.\n", jmeno);
-					broadcastHrac(textK);
-					break;
+					//memset(&textK, 0, sizeof(textK));
+					//sprintf(textK, "$[%s]: se odpojil od chatu.\n", jmeno);
+					printf("[%s]: se odpojil od serveru.\n", jmeno);
 				}
 				else
 				{
-					printf("error jiny: %d\n", z.error);
+					printf("Error jiny: %d\n", z.error);
 				}
 			}
 		}

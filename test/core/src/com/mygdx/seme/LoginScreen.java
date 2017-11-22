@@ -187,11 +187,6 @@ public class LoginScreen implements Screen, InputProcessor
 		return false;
 	}
 	
-	public void changeSceen()
-	{
-		game.setScreen(Monopoly.LobbyScreen);
-	}
-	
 	@Override
 	public void resize(int width, int height)
 	{

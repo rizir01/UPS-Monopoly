@@ -89,7 +89,6 @@ public class TestClient extends Thread
 				System.out.println("Byl jste uspesne prihlasen!");
 				receive.start();
 				Monopoly.LoginScreen.game.setScreen(Monopoly.LobbyScreen);
-		        //chatWithServer();
 			}
 			else if(back2.equals("decline"))
 			{
