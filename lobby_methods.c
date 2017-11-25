@@ -8,8 +8,6 @@
 #include <string.h>
 #include <pthread.h>
 #include "lobby.h"
-#include "hrac.h"
-#include "hrac_methods.c"
 
 //deklarace funkci
 

@@ -62,7 +62,7 @@ public class TestClient extends Thread
 		System.out.println("----End of chat----");
 	}
 	
-	public int defineSituation(String instrukce)
+	public int defineSituationLogin(String instrukce)
 	{
 		int indV = instrukce.indexOf('!');
 		if(indV == -1)//neni vykricnik ve zprava
@@ -155,7 +155,7 @@ public class TestClient extends Thread
 			
 			//PRIJEM
 			String message = (String)bf.readLine();
-			defineSituation(message);
+			defineSituationLogin(message);
 			
 			bw.close();
 			bf.close();

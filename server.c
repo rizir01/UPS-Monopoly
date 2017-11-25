@@ -295,6 +295,8 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z)
 	if(strcmp(front, "refresh") == 0)
 	{
 		//Vytvorit string s naplni vsech dat z lobbies
+		char textK[250];
+		memset(&textK, '\0', sizeof(textK));
 	}
 	else if(strcmp(front, "create") == 0)
 	{
@@ -314,7 +316,7 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z)
 	}
 	else
 	{
-		printf("Nic z toho nesedi na %s\n", front)
+		printf("Nic z toho nesedi na %s\n", front);
 	}	
 }
 
