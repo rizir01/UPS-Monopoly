@@ -11,10 +11,11 @@ import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 import com.badlogic.gdx.math.Vector3;
 
 public class LobbyScreen implements Screen, InputProcessor
-{
+{	
 	Game game;
 	BitmapFont font;
 	OrthographicCamera camera;
@@ -24,6 +25,8 @@ public class LobbyScreen implements Screen, InputProcessor
 	
 	static int width = Gdx.graphics.getWidth();
 	static int height = Gdx.graphics.getHeight();
+	
+	static Lobby [] lobbies;
 	
 	public LobbyScreen(Monopoly mono)
 	{
@@ -37,13 +40,13 @@ public class LobbyScreen implements Screen, InputProcessor
 		batch = new SpriteBatch();
 		sr = new ShapeRenderer();
         touch = new Vector3();
-        //Gdx.input.setInputProcessor(this);
 	}
 	
 	@Override
 	public void show()
 	{
 		Gdx.input.setInputProcessor(this);
+		Monopoly.LoginScreen.sendToThread("GUI", "$refresh#");
 	}
 
 	@Override
@@ -53,6 +56,32 @@ public class LobbyScreen implements Screen, InputProcessor
 		Gdx.gl.glClearColor(1F, 1F, 1F, 1F);
 		Gdx.gl.glClear(GL30.GL_COLOR_BUFFER_BIT);
 		camera.update();
+		
+		
+		//vykresleni kazde lobby
+		if(lobbies != null)
+		{
+			float x = 20;
+			float y = 20;
+			for(int i = 0; i < lobbies.length; i++)
+			{
+				renderLobbyInfo(x, y, 300, 75, lobbies[i].lobbyName, lobbies[i].pocetHracu);
+				x += 300;
+				y += 75 + 25; 
+			}
+		}
+	}
+	
+	public void renderLobbyInfo(float x, float y, float widthX, float widthY, String name, int pocet)
+	{
+		float spaceTextX = 20;
+		float spaceTextY = 50;
+		sr.begin(ShapeType.Line);
+			sr.setColor(Color.GRAY);
+			sr.rect(x, y, widthX, widthY);
+			font.draw(batch, name, x + spaceTextX, y + spaceTextY);
+			font.draw(batch, pocet + "/4", (x + widthX) - 2 * spaceTextX, y + spaceTextY);
+		sr.end();
 	}
 
 	@Override

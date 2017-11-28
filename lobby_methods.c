@@ -51,6 +51,13 @@ int initLobby()
 
 int addLobby(char *nazev)
 {
+	for(int i = 0; i < length_lobbies; i++)
+	{
+		if(strcmp(lobbies[i].lobbyName, nazev) == 0)
+		{
+			return 1;//Lobby jiz exsituje!!
+		}
+	}
 	pthread_mutex_lock(&lockLobby);
 	
 	lobbies = boostLobby();
@@ -123,6 +130,7 @@ struct Lobby* reduceLobby(int index)
 	return lessLobbies;
 }
 
+//Pridelat zmenu stavu pri pripojeni do lobby
 int addPlayer(int indexHrac, int indexLobby)
 {
 	if(indexHrac < 0 || indexHrac >= length_hraci)
@@ -165,6 +173,7 @@ int addPlayer(int indexHrac, int indexLobby)
 	return 0;
 }
 
+//Pridelat zmenu stavu pri odpojeni od lobby
 int removePlayer(int indexHrac, int indexLobby)
 {
 	if(indexHrac < 0 || indexHrac >= length_hraci)

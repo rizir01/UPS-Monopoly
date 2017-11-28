@@ -2,24 +2,19 @@ package com.mygdx.seme;
 
 import java.io.IOException;
 import java.net.SocketException;
+import java.util.Arrays;
 
 public class TestClientRecieve extends Thread
 {	
-	String [] inputBuffer = new String [5];
-	
-	int indInput = 0;
+	Message [] buffer; 
 	
 	boolean done;
 	
-	public TestClientRecieve()
+	public TestClientRecieve(Message [] buff)
 	{
 		done = true;
-	}
-	
-	public void putData(String text)
-	{
-		inputBuffer[indInput] = text;
-		indInput++;
+		buffer = buff;
+		//index = 0;
 	}
 	
 	@Override
@@ -42,9 +37,24 @@ public class TestClientRecieve extends Thread
 				}
 				else if(message.charAt(0) != '$')
 				{
+					System.out.println(message);
 					System.out.println("Prisel spatny format zpravy(chybi $)!");
 				}
-				System.out.println("READER: " + message.substring(1));
+				else
+				{
+					//System.out.println("GET FROM SERVER synch index: " + LoginScreen.indBuff);
+					synchronized(buffer[LoginScreen.indBuff])
+					{
+						//System.out.println("GET FROM SERVER before index: " + LoginScreen.indBuff);
+						//System.out.println("RC1 " + Arrays.toString(buffer));
+						buffer[LoginScreen.indBuff].setMessage("SERVER", message.substring(1));
+						//System.out.println("RC2 " + Arrays.toString(buffer));
+						//System.out.println("GET FROM SERVER before2 index: " + LoginScreen.indBuff);
+						buffer[LoginScreen.indBuff].notify();
+						LoginScreen.indBuff++;
+						//System.out.println("GET FROM SERVER after index: " + LoginScreen.indBuff);
+					}
+				}
 			}
 		}
 		catch(SocketException r)

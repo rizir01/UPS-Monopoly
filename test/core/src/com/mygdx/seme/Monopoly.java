@@ -15,8 +15,8 @@ public class Monopoly extends Game
 		//Server server = new Server();
 		//server.start();
 		GameScreen = new GameScreen(this);
-		LoginScreen = new LoginScreen(this);
 		LobbyScreen = new LobbyScreen(this);
+		LoginScreen = new LoginScreen(this);
 		setScreen(LoginScreen);
 		//setScreen(GameScreen);
 	}

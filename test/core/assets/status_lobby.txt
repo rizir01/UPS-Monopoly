@@ -6,8 +6,8 @@ $leave# - opustit konkretni lobby
 $discon# - odhlasit se
 
 SERVER -> CLIENT
-$refresh!pocet_lobbyn!NazevLobby1, NazevLobby2, ...!LobbyLidi1, LobbyLidi2, ...# - poslani informaci o vsech lobby co na serveru jsou
-$create!accpet# - potvrzeni vytvoreni lobby
-$create!decline!error_kod# - zamitnuti vytvoreni lobby
-$join!accept!pocet_lidi!Hrac1, Hrac2, ...# - potvrzeni k pripojeni se ke konkretni lobby s prislusnymi dalsimy informacemi
-$join!decline!error_kod# - zamitnuti pripojeni
+$refresh!pocet_lobbyn!NazevLobby1, NazevLobby2, ...!LobbyLidi1, LobbyLidi2, ...!# - poslani informaci o vsech lobby co na serveru jsou
+$create!accpet!# - potvrzeni vytvoreni lobby
+$create!decline!error_kod!# - zamitnuti vytvoreni lobby
+$join!accept!pocet_lidi!Hrac1, Hrac2, ...!# - potvrzeni k pripojeni se ke konkretni lobby s prislusnymi dalsimy informacemi
+$join!decline!error_kod!# - zamitnuti pripojeni

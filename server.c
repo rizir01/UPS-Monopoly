@@ -19,10 +19,9 @@ char** whitelist;
 //Pocet polozek v whitelistu
 int listNum;
 
-//!!!!!!DO BUDOUCNA MOZNA ZVETSIT NA 100 ZNAKU!!!!!!
 struct Zprava
 {
-	char msg[50];
+	char msg[1000];
 	int length;
 	int zaznamInd;
 	int error;//bool
@@ -43,10 +42,10 @@ struct Zprava getMessage(int client_socket)//Monza pridelat stav erroru ($asda#a
 	int return_value = 0;
 	int zac = 0;//bool
 	int kon = 0;//bool
-	char pole[50];
+	char pole[1000];
 	int indexP = 0;
 	int delka = 0;
-	memset(&pole, 0, sizeof(pole));
+	memset(&pole, '0', sizeof(pole));
 	do
 	{
 		char z;
@@ -260,7 +259,7 @@ struct Zprava rozdeleniZprav(struct Zprava z)
 	return k;
 }
 
-struct Zprava rozdeleniZpravyLobby(struct Zprava z)
+struct Zprava rozdeleniZpravyLobby(struct Zprava z, int cl)
 {
 	struct Zprava k;
 	k.zaznamInd = -1;
@@ -295,32 +294,247 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z)
 	if(strcmp(front, "refresh") == 0)
 	{
 		//Vytvorit string s naplni vsech dat z lobbies
-		char textK[250];
+		char textK[1000];
 		memset(&textK, '\0', sizeof(textK));
+		sprintf(textK, "$refresh!%d!", length_lobbies);
+		//Nazvy lobbyn
+		for(int i = 0;i < length_lobbies;i++)
+		{
+			strcat(textK, lobbies[i].lobbyName);
+			if(i + 1 < length_lobbies)
+			{
+				strcat(textK, ",");		
+			}
+			else
+			{
+				strcat(textK, "!");	
+			}
+		}
+		//Pocet lidi v lobbynach
+		for(int i = 0;i < length_lobbies;i++)
+		{
+			char z[1];
+			sprintf(z, "%d", lobbies[i].pocetHracu);
+			strcat(textK, z);
+			if(i + 1 < length_lobbies)
+			{
+				strcat(textK, ",");		
+			}
+			else
+			{
+				strcat(textK, "!#\n");	
+			}
+		}
+		strcpy(k.msg, textK);
+		k.length = strlen(k.msg);
+		k.error = 0;
+		printf("!%s!", k.msg);
+		return k;
 	}
 	else if(strcmp(front, "create") == 0)
 	{
 		//Vytvorit novou lobby s prevzatym nazvem
+		int v = addLobby(back);
+		if(v > 0)
+		{
+			sprintf(k.msg, "$create!decline!%d!#\n", v);
+			k.error = v;
+		}
+		else
+		{
+			sprintf(k.msg, "$create!accpet!#\n");	
+			k.error = 0;
+		}
+		k.length = strlen(k.msg);
+		printf("!%s!", k.msg);
+		return k; 
 	}
 	else if(strcmp(front, "join") == 0)
 	{
 		//Pridat index tohoto hrace do lobby s indexem lobby
+		printf("%s index pro join hrace do lobby!", back);
+		int inL = atoi(back);
+		int inH = -1;
+		int ind = -1;
+		for(int i =0;i < length_hraci;i++)
+		{
+			if(hraci[i].init == 1 && hraci[i].client_socket == cl)
+			{
+				ind = i;
+				break;
+			}
+		}
+		if(ind == -1)
+		{
+			printf("Chyba, hrac nebyl nalezen v seznamu hracu!\n");
+			sprintf(k.msg, "$join!decline!4!#\n");
+			k.length = strlen(k.msg);
+			k.error = 4;
+			printf("!%s!", k.msg);
+			return k;
+		}
+		int returnValue = addPlayer(inH, inL);
+		if(returnValue >= 1)
+		{
+			sprintf(k.msg, "$join!decline!%d!#\n", returnValue);
+			k.error = returnValue;
+		}
+		else
+		{
+			sprintf(k.msg, "$join!accept!");
+			char x[1];
+			sprintf(x, "%d", lobbies[inL].pocetHracu);
+			strcat(k.msg, x);
+			for(int i = 0;i < 4;i++)
+			{
+				int y = lobbies[inL].hraciLobby[i];
+				if(y >= 0)
+				{
+					strcat(k.msg, hraci[y].jmeno);
+					if(i + 1 < 4)
+					{
+						strcat(k.msg, ",");		
+					}
+					else
+					{
+						strcat(k.msg, "!#\n");	
+					}	
+				}
+			}
+			k.error = 0;
+		}
+		k.length = strlen(k.msg);
+		printf("!%s!", k.msg);
+		return k;
 	}
 	else if(strcmp(front, "leave") == 0)
 	{
 		//Opusteni hrace z konkretni lobby
+		int indH = -1;
+		for(int i = 0;i < length_hraci;i++)
+		{
+			if(hraci[i].init == 1 && hraci[i].client_socket == cl)
+			{
+				indH = i;
+				break;
+			}
+		}
+		if(indH == -1)
+		{
+			printf("Chyba, hrac nebyl nalezen v seznamu hracu!\n");
+			sprintf(k.msg, "$leave!error!8!#\n");
+			k.length = strlen(k.msg);
+			k.error = 8;
+			printf("!%s!", k.msg);
+			return k;
+		}
+		int indL = -1;
+		for(int i = 0; i < length_lobbies; i++)
+		{
+			for(int j = 0; j < 4; j++)
+			{
+				if(lobbies[i].hraciLobby[j] == indH)
+				{
+					indL = i;
+					break;
+				}
+			}
+		}
+		if(indL == -1)
+		{
+			printf("Chyba, hrac neni v zadne lobby!\n");
+			sprintf(k.msg, "$leave!error!7!#\n");
+			k.length = strlen(k.msg);
+			k.error = 7;
+			printf("!%s!", k.msg);
+			return k;
+		}
+		
+		int returnValue = removePlayer(indH, indL);
+		if(returnValue >= 1)
+		{
+			sprintf(k.msg, "$leave!decline!6!#\n");
+			k.error = 6;
+		}
+		else
+		{
+			sprintf(k.msg, "$leave!accepted!#\n");
+			k.error = 5;	
+		}
+		k.length = strlen(k.msg);
+		printf("!%s!", k.msg);
+		return k;		
 	}
 	else if(strcmp(front, "discon") == 0)
 	{
-		//Odhlaseni hrace ze lobby a okamzity navrat do prihlasovaci obrazovky
+		//Odhlaseni hrace z lobby a okamzity navrat do prihlasovaci obrazovky
+		int indH = -1;
+		for(int i = 0;i < length_hraci;i++)
+		{
+			if(hraci[i].init == 1 && hraci[i].client_socket == cl)
+			{
+				indH = i;
+				break;
+			}
+		}
+		if(indH == -1)
+		{
+			printf("Chyba, hrac nebyl nalezen v seznamu hracu!\n");
+			sprintf(k.msg, "$discon!error!7!#\n");
+			k.length = strlen(k.msg);
+			k.error = 7;
+			printf("!%s!", k.msg);
+			return k;
+		}
+		int indL = -1;
+		for(int i = 0; i < length_lobbies; i++)
+		{
+			for(int j = 0; j < 4; j++)
+			{
+				if(lobbies[i].hraciLobby[j] == indH)
+				{
+					indL = i;
+					break;
+				}
+			}
+		}
+		if(indL == -1)
+		{
+			printf("Chyba, hrac neni v zadne lobby!\n");
+			sprintf(k.msg, "$discon!error!6!#\n");
+			k.length = strlen(k.msg);
+			k.error = 6;
+			printf("!%s!", k.msg);
+			return k;
+		}
+		
+		int returnValue = removePlayer(indH, indL);
+		if(returnValue >= 1)
+		{
+			sprintf(k.msg, "$discon!decline!5!#\n");
+			k.error = 5;
+		}
+		else
+		{
+			sprintf(k.msg, "$discon!accepted!#\n");
+			k.error = 100;
+			//SPECIALNI ERROR, bude predstavovat ukonceni celkove
+			//apklikace jako takove, jednoduse se ukonci spojeni 	
+		}
+		k.length = strlen(k.msg);
+		printf("!%s!", k.msg);
+		return k;
 	}
 	else
 	{
-		printf("Nic z toho nesedi na %s\n", front);
+		printf("Nic ze znamych parametru nesedi na |%s|\n", front);
+		k.error = 5;
+		k.length = strlen(k.msg);
+		return k;
 	}	
 }
 
-// telo vlakna co zprostredkuje nejdrive prijem
+//Telo vlakna co zprostredkuje nejdrive prijem
 //loginu a hesla a nasledne posle klientovi jestli
 //byl uspesne prihlasen, nasledne zprostredkuje chat
 //mezi vsemi uzivateli.
@@ -370,9 +584,7 @@ void *serve_request(void *arg)
 	{
 		//JSEM UZ V MENU S LOBBY
 		addHrac(client_socket, jmeno);
-		char textK[100];
-		memset(&textK, 0, sizeof(textK));
-		//sprintf(textK, "[%s]: se pripojil na server.\n", jmeno);
+		int indexH = getHracIndex(client_socket);
 		printf("[%s]: se pripojil na server.\n", jmeno);
 		while(1)
 		{
@@ -380,15 +592,25 @@ void *serve_request(void *arg)
 			if(z.error == 0)
 			{
 				printf("Prijato: %s\n", z.msg);
-					
+				if(hraci[indexH].stav == 1)
+				{
+					z = rozdeleniZpravyLobby(z, client_socket);
+					if(z.error < 5)
+					{
+						send(client_socket, &z.msg, strlen(z.msg), 0);
+					}
+					else if(z.error == 100)
+					{
+						break;
+					}
+				}				
 			}
 			else
 			{
-				if(z.error == 2)
+				if(z.error <= 4)
 				{
-					//memset(&textK, 0, sizeof(textK));
-					//sprintf(textK, "$[%s]: se odpojil od chatu.\n", jmeno);
 					printf("[%s]: se odpojil od serveru.\n", jmeno);
+					break;
 				}
 				else
 				{

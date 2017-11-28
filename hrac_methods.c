@@ -16,6 +16,8 @@ int removeHrac(int id);
 
 int removeHracSoc(int clie_soc);
 
+int getHracIndex(int socket);
+
 int broadcastHrac();
 
 struct Hrac* boostHraci();
@@ -93,6 +95,20 @@ struct Hrac* reduceHraci()
 int uvolniHrace()
 {
 	free(hraci);
+}
+
+int getHracIndex(int socket)
+{
+	int ind = -1;
+	for(int i = 0;i < length_hraci; i++)
+	{
+		if(hraci[i].client_socket == socket)
+		{
+			ind = i;
+			break;
+		}
+	}
+	return ind;
 }
 
 int addHrac(int c_socket, char *nazev)

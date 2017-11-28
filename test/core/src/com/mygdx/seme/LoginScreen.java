@@ -17,6 +17,12 @@ import com.badlogic.gdx.math.Vector3;
 
 public class LoginScreen implements Screen, InputProcessor
 {
+	Message [] bufferSend;
+	static int indBuff = 0;
+	
+	TestClient tc;
+	TestClientRecieve rc;
+	
 	Monopoly game;
 	static OrthographicCamera camera;
 	SpriteBatch batch;
@@ -37,6 +43,12 @@ public class LoginScreen implements Screen, InputProcessor
 	
 	public LoginScreen(Monopoly mono)
 	{
+		bufferSend = new Message[5];
+		for(int i = 0; i < bufferSend.length; i++)
+		{
+			bufferSend[i] = new Message(null, null);
+		}
+		
 		this.game = mono;
 		rand = new Random();
 		font = new BitmapFont(Gdx.files.internal("font/Stelar-Regular-final.fnt"), false);
@@ -48,6 +60,16 @@ public class LoginScreen implements Screen, InputProcessor
 		batch = new SpriteBatch();
 		sr = new ShapeRenderer();
         touch = new Vector3();
+	}
+	
+	public void sendToThread(String type, String data)
+	{
+		synchronized(bufferSend[indBuff])
+		{
+			bufferSend[indBuff].setMessage(type, data);
+			bufferSend[indBuff].notify();
+			indBuff++;
+		}
 	}
 	
 	@Override
@@ -155,8 +177,9 @@ public class LoginScreen implements Screen, InputProcessor
 				//LOGIN CLIENTA
 				//ClientData cl = new ClientData();
 				//cl.start();
-				TestClient tc = new TestClient();
-				tc.start();
+				tc = new TestClient(bufferSend);
+				rc = new TestClientRecieve(bufferSend);
+				new Thread(tc, "CLIENT CONNECTION AND SENDING").start();
 				clickDelay = 50;
 			}
 			if(isObjectTouched(touch, widthSpace + 2 * widthEdBut + widthButton, heightSpace + heightA - heightEdgeY - heightButton, widthButton, heightButton))
@@ -267,8 +290,9 @@ public class LoginScreen implements Screen, InputProcessor
 		}
 		else if((int)character == 13)//ENTER
 		{
-			TestClient tc = new TestClient();
-			tc.start();
+			tc = new TestClient(bufferSend);
+			rc = new TestClientRecieve(bufferSend);
+			new Thread(tc, "CLIENT CONNECTION AND SENDING").start();
 			clickDelay = 50;
 		}
 		else
