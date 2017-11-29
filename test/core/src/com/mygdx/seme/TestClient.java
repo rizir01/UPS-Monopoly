@@ -8,10 +8,7 @@ import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.Arrays;
 import java.util.Scanner;
-
-import javax.swing.plaf.synth.SynthSpinnerUI;
 
 public class TestClient extends Thread
 {
@@ -30,8 +27,6 @@ public class TestClient extends Thread
 	static BufferedReader bf;
 	
 	static Scanner sc = new Scanner(System.in);
-	
-	TestClientRecieve receive;
 	
 	public TestClient(Message [] buffer)
 	{
@@ -52,46 +47,6 @@ public class TestClient extends Thread
 		return vys;
 	}
 	
-	public void chatWithServer()
-	{
-		String zprava = "";
-		receive.start();		
-		System.out.println("---Start of chat---");
-		while(true)
-		{
-			boolean done = true;
-			while(done)
-			{
-				zprava = sc.nextLine();
-				if(zprava.length() > 50)
-				{
-					System.out.println("Zprava je moc dlouha!(Max. 50)");
-				}
-				else
-				{
-					done = false;
-				}
-			}
-			
-			zprava = "$" + zprava + "#\n";
-			
-			try
-			{
-				bw.write(zprava.getBytes());
-				if(zprava.equals("$!cc!#\n"))
-				{
-					receive.done = false;
-					break;
-				}
-			}
-			catch(IOException e)
-			{
-				e.printStackTrace();
-			}
-		}
-		System.out.println("----End of chat----");
-	}
-
 	public void lobbyState()
 	{
 		while(true)
@@ -99,16 +54,10 @@ public class TestClient extends Thread
 			try
 			{
 				String [] message = new String[2];
-				System.out.println("CEKAM NA PRIJMUTI");
-				System.out.println("READING before index: " + LoginScreen.indBuff);
 				synchronized(buffer[LoginScreen.indBuff])
 				{
-					//System.out.println("READING before index: " + LoginScreen.indBuff);
 					buffer[LoginScreen.indBuff].wait();
-					//System.out.println("READING before getData() index: " + LoginScreen.indBuff);
 					message = getData();
-					//System.out.println(message[0] + ", " + message[1]);
-					//System.out.println("READING after index: " + LoginScreen.indBuff);
 				}
 				String send = "";
 				switch(stavHrace)
@@ -165,10 +114,10 @@ public class TestClient extends Thread
 			if(LobbyScreen.lobbies == null)
 			{
 				LobbyScreen.lobbies = new Lobby[pocetLobbyin];
-				for(int i = 0; i < pole.length; i++)
+				for(int i = 0; i < pocetLobbyin; i++)
 				{
 					LobbyScreen.lobbies[i] = new Lobby(nazvyLobbyin[i]);//Nazev konkretni lobby
-					LobbyScreen.lobbies[i].pocetHracu = Integer.parseInt(lobbyLidi[i]);//Pocet hracu v konkretni lobby
+					LobbyScreen.lobbies[i].setPocetHracu(Integer.parseInt(lobbyLidi[i]));//Pocet hracu v konkretni lobby
 				}
 			}
 			else
@@ -177,7 +126,7 @@ public class TestClient extends Thread
 				for(int i = 0; i < noveLobby.length; i++)
 				{
 					noveLobby[i] = new Lobby(nazvyLobbyin[i]);//Nazev konkretni lobby
-					noveLobby[i].pocetHracu = Integer.parseInt(lobbyLidi[i]);//Pocet hracu v konkretni lobby 
+					noveLobby[i].setPocetHracu(Integer.parseInt(lobbyLidi[i]));//Pocet hracu v konkretni lobby 
 				}
 				LobbyScreen.lobbies = noveLobby;
 			}
@@ -213,22 +162,31 @@ public class TestClient extends Thread
 			String [] input = Assets.separeter(back, '!');
 			if(input[0].equals("accept"))
 			{
-				//Pripojit se do lobby, o kterou jsem si predtim zazadal, prevzit hodnoty				
+				String [] names = Assets.separeter(input[2], ',');
+				//Pripojit se do lobby, o kterou jsem si predtim zazadal, prevzit hodnoty
+				int pocetL = Integer.parseInt(input[1]);
+				LobbyScreen.lobbies[LobbyScreen.selectedLobby].addPlayer(LoginScreen.login);
+				LobbyScreen.currentLobby = new String[pocetL];
+				for (int i = 0; i < pocetL; i++)
+				{
+					LobbyScreen.currentLobby[i] = names[i];
+				}
+				LobbyScreen.drawAllInfo = true;
 			}
 			else if(input[0].equals("decline"))
 			{
 				int cis = Integer.parseInt(input[1]);
 				switch(cis)
 				{
-				case 1://Index hrace, nebo [server hodnota] lobby neni ve stanovenych mezich!
+				case 1:System.out.println("Index hrace, nebo [server hodnota] lobby neni ve stanovenych mezich!");
 					   break;
-				case 2://Na zadanem indexu [server hodnota] neni zadny hrac!
+				case 2:System.out.println("Na zadanem indexu [server hodnota] neni zadny hrac!");
 					   break;
-				case 3://Neni jiz misto v lobby
+				case 3:System.out.println("Neni jiz misto v lobby");
 					   break;
-				case 4://Chyba, hrac nebyl nalezen v seznamu hracu!
+				case 4:System.out.println("Chyba, hrac nebyl nalezen v seznamu hracu!");
 					   break;
-				default://Nejaka jina chyba nedefinovana zde!
+				default:System.out.println("Nejaka jina chyba nedefinovana zde!");
 						break;
 				}
 			}
@@ -282,12 +240,11 @@ public class TestClient extends Thread
 				switch(zn)
 				{
 				case '1':System.out.println("Login/Heslo je spatne zapsano nebo neexistuje!");
-						 return 1;
+						 break;
 				case '2':System.out.println("Zaslana zprava neobsahuje paramater 'login'!");
-					 	 System.exit(1);
 					 	 break;
 				case '3':System.out.println("Zadany uzivatel je uz prihlasen!\nZadejte udaje znovu.");
-						 return 1;
+						 break;
 				default:System.out.println("Zadana zprava neobsahuje validni parametr!");
 						break;
 				}
@@ -349,7 +306,6 @@ public class TestClient extends Thread
 			
 			bw.close();
 			bf.close();
-			receive.join();
 			System.out.println("ZAVIRAM IN/OUT a ted i socket samotny");
 			socket.close();
 		}
@@ -360,10 +316,6 @@ public class TestClient extends Thread
 		catch(ConnectException ce)
 		{
 			System.out.println("Server je nedostupny, zkuste to prosim pozdeji!");
-		}
-		catch(InterruptedException ie)
-		{
-			ie.printStackTrace();
 		}
 		catch (IOException e)
 		{

@@ -2,7 +2,6 @@ package com.mygdx.seme;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Random;
 import java.util.Scanner;
 
@@ -50,44 +49,47 @@ public class Assets
 	 */
 	public static String [] separeter(String str, char znak)
 	{
-		String [] result = new String[0];
-		boolean setStart = true;
-		int ind = 0;
-		int indexS = 0;
-		for (int i = 0; i < str.length(); i++)
+		int l = 0;
+		boolean nenasel = true;//Nenasel znak v celem retezci
+		for(int i = 0; i < str.length(); i++)
 		{
-			if(str.charAt(i) == znak && !setStart)
+			if(str.charAt(i) == znak)
 			{
-				String [] tmp = new String[result.length + 1];
-				for (int j = 0; j < result.length; j++)
-				{
-					tmp[j] = result[j];
-				}
-				result = tmp;
-				result[ind++] = str.substring(indexS, i);
-				setStart = true;
-				indexS = i;
+				nenasel = false;
+				l++;
 			}
-			else if(i + 1 == str.length() && !setStart)
+		}
+		if(nenasel)
+		{
+			l = 1;
+		}
+		boolean neniPosledniZnak = false;//Posledni znak retezce neni hledany znak
+		if(str.charAt(str.length() - 1) != znak)
+		{
+			if(!nenasel)
 			{
-				String [] tmp = new String[result.length + 1];
-				for (int j = 0; j < result.length; j++)
-				{
-					tmp[j] = result[j];
-				}
-				result = tmp;
-				result[ind++] = str.substring(indexS, i+1);
-				setStart = true;
-				indexS = i;
+				neniPosledniZnak = true;				
+				l++;
+			}
+		}
+		String [] result = new String[l];
+		int indexPole = 0;
+		String tmp = "";
+		for(int i = 0; i < str.length(); i++)
+		{
+			if(str.charAt(i) == znak)
+			{
+				result[indexPole++] = tmp;
+				tmp = "";
 			}
 			else
 			{
-				if(setStart && str.charAt(i) != znak)
-				{
-					indexS = i;
-					setStart = false;
-				}
+				tmp += str.charAt(i);
 			}
+		}
+		if(neniPosledniZnak || nenasel)
+		{
+			result[indexPole] = tmp;
 		}
 		return result;
 	}

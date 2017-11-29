@@ -76,6 +76,8 @@ public class LoginScreen implements Screen, InputProcessor
 	public void show()
 	{
 		Gdx.input.setInputProcessor(this);
+		tc = new TestClient(bufferSend);
+		rc = new TestClientRecieve(bufferSend);
 	}
 	
 	@Override
@@ -175,10 +177,6 @@ public class LoginScreen implements Screen, InputProcessor
 			if(isObjectTouched(touch, widthSpace + widthEdBut, heightSpace + heightA - heightEdgeY - heightButton, widthButton, heightButton))
 			{
 				//LOGIN CLIENTA
-				//ClientData cl = new ClientData();
-				//cl.start();
-				tc = new TestClient(bufferSend);
-				rc = new TestClientRecieve(bufferSend);
 				new Thread(tc, "CLIENT CONNECTION AND SENDING").start();
 				clickDelay = 50;
 			}
@@ -290,8 +288,6 @@ public class LoginScreen implements Screen, InputProcessor
 		}
 		else if((int)character == 13)//ENTER
 		{
-			tc = new TestClient(bufferSend);
-			rc = new TestClientRecieve(bufferSend);
 			new Thread(tc, "CLIENT CONNECTION AND SENDING").start();
 			clickDelay = 50;
 		}

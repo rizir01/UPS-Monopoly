@@ -1,9 +1,9 @@
 CLIENT -> SERVER
-$refresh# - aktualizovat si seznam lobbyn v menu
+$refresh!0# - aktualizovat si seznam lobbyn v menu
 $create!nazev_lobby# - vytvorit lobby
 $join!index_lobby# - pripojit se ke konkretni lobby
-$leave# - opustit konkretni lobby
-$discon# - odhlasit se
+$leave!0# - opustit konkretni lobby
+$discon!0# - odhlasit se
 
 SERVER -> CLIENT
 $refresh!pocet_lobbyn!NazevLobby1, NazevLobby2, ...!LobbyLidi1, LobbyLidi2, ...!# - poslani informaci o vsech lobby co na serveru jsou

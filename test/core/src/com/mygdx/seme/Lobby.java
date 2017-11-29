@@ -2,9 +2,9 @@ package com.mygdx.seme;
 
 public class Lobby
 {
-	String [] hraci;
+	private String [] hraci;
 	
-	int pocetHracu;
+	private int pocetHracu;
 	
 	String lobbyName;
 	
@@ -20,7 +20,7 @@ public class Lobby
 		boolean nenasel = true;
 		for(int i = 0; i < hraci.length; i++)
 		{
-			if(hraci[i] != null)
+			if(hraci[i] == null)
 			{
 				nenasel = false;
 				hraci[i] = jmeno;
@@ -59,5 +59,15 @@ public class Lobby
 			System.out.println("Chyba, v seznamu neni hrac s nazvem " + jmeno + "!");
 		}
 		pocetHracu--;
+	}
+	
+	public int getPocetHrau()
+	{
+		return pocetHracu;
+	}
+	
+	public void setPocetHracu(int hraci)
+	{
+		pocetHracu = hraci;
 	}
 }

@@ -2,7 +2,6 @@ package com.mygdx.seme;
 
 import java.io.IOException;
 import java.net.SocketException;
-import java.util.Arrays;
 
 public class TestClientRecieve extends Thread
 {	
@@ -37,7 +36,7 @@ public class TestClientRecieve extends Thread
 				}
 				else if(message.charAt(0) != '$')
 				{
-					System.out.println(message);
+					System.out.println("SR: |" + message + "|");
 					System.out.println("Prisel spatny format zpravy(chybi $)!");
 				}
 				else
@@ -47,7 +46,7 @@ public class TestClientRecieve extends Thread
 					{
 						//System.out.println("GET FROM SERVER before index: " + LoginScreen.indBuff);
 						//System.out.println("RC1 " + Arrays.toString(buffer));
-						buffer[LoginScreen.indBuff].setMessage("SERVER", message.substring(1));
+						buffer[LoginScreen.indBuff].setMessage("SERVER", message.substring(1, message.length() - 1));
 						//System.out.println("RC2 " + Arrays.toString(buffer));
 						//System.out.println("GET FROM SERVER before2 index: " + LoginScreen.indBuff);
 						buffer[LoginScreen.indBuff].notify();

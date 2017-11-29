@@ -228,9 +228,10 @@ struct Zprava rozdeleniZprav(struct Zprava z)
 				}
 				else
 				{
+					//Pokus o prihalseni jiz prihlaseneho hrace
 					strcpy(k.msg, "login!decline!3!\n");
 					k.length = strlen(k.msg);
-					k.error = 4;
+					k.error = 3;
 					return k;
 				}
 				break;
@@ -238,20 +239,23 @@ struct Zprava rozdeleniZprav(struct Zprava z)
 		}
 		if(naselZaznam == 0)
 		{
+			//Hrac nebyl nalezen ve whitelistu
 			strcpy(k.msg, "login!decline!1!\n");
 			k.length = strlen(k.msg);
-			k.error = 3;
+			k.error = 1;
 			return k;
 		}
 	}
 	else
 	{
+		//Spatny parametr login, neco jineho, treba llogin
 		strcpy(k.msg, "login!decline!2!\n");
 		k.length = strlen(k.msg);
-		k.error = 1;
+		k.error = 2;
 		return k;
 	}
 	
+	//Vse probehlo spravne
 	strcpy(k.msg, "login!accept!0!\n");
 	k.zaznamInd = zazInd;
 	k.length = strlen(k.msg);
@@ -289,8 +293,8 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z, int cl)
 		k.error = 2;
 		return k;
 	}
-	printf("%s\n", front);
-	printf("%s\n", back);
+	//printf("%s\n", front);
+	//printf("%s\n", back);
 	if(strcmp(front, "refresh") == 0)
 	{
 		//Vytvorit string s naplni vsech dat z lobbies
@@ -328,7 +332,7 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z, int cl)
 		strcpy(k.msg, textK);
 		k.length = strlen(k.msg);
 		k.error = 0;
-		printf("!%s!", k.msg);
+		printf("%s", k.msg);
 		return k;
 	}
 	else if(strcmp(front, "create") == 0)
@@ -346,31 +350,30 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z, int cl)
 			k.error = 0;
 		}
 		k.length = strlen(k.msg);
-		printf("!%s!", k.msg);
+		printf("%s", k.msg);
 		return k; 
 	}
 	else if(strcmp(front, "join") == 0)
 	{
 		//Pridat index tohoto hrace do lobby s indexem lobby
-		printf("%s index pro join hrace do lobby!", back);
+		printf("%s index pro join hrace do lobby!\n", back);
 		int inL = atoi(back);
 		int inH = -1;
-		int ind = -1;
 		for(int i =0;i < length_hraci;i++)
 		{
 			if(hraci[i].init == 1 && hraci[i].client_socket == cl)
 			{
-				ind = i;
+				inH = i;
 				break;
 			}
 		}
-		if(ind == -1)
+		if(inH == -1)
 		{
 			printf("Chyba, hrac nebyl nalezen v seznamu hracu!\n");
 			sprintf(k.msg, "$join!decline!4!#\n");
 			k.length = strlen(k.msg);
 			k.error = 4;
-			printf("!%s!", k.msg);
+			printf("%s", k.msg);
 			return k;
 		}
 		int returnValue = addPlayer(inH, inL);
@@ -382,29 +385,32 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z, int cl)
 		else
 		{
 			sprintf(k.msg, "$join!accept!");
-			char x[1];
-			sprintf(x, "%d", lobbies[inL].pocetHracu);
+			char x[2];
+			sprintf(x, "%d!", lobbies[inL].pocetHracu);
 			strcat(k.msg, x);
+			int aktPocet = 0;
 			for(int i = 0;i < 4;i++)
 			{
 				int y = lobbies[inL].hraciLobby[i];
 				if(y >= 0)
 				{
 					strcat(k.msg, hraci[y].jmeno);
-					if(i + 1 < 4)
+					aktPocet++;
+					if(aktPocet == lobbies[inL].pocetHracu)
 					{
-						strcat(k.msg, ",");		
+						strcat(k.msg, "!#\n");
+						break;		
 					}
 					else
 					{
-						strcat(k.msg, "!#\n");	
+						strcat(k.msg, ",");	
 					}	
 				}
 			}
 			k.error = 0;
 		}
 		k.length = strlen(k.msg);
-		printf("!%s!", k.msg);
+		printf("%s", k.msg);
 		return k;
 	}
 	else if(strcmp(front, "leave") == 0)
@@ -425,7 +431,7 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z, int cl)
 			sprintf(k.msg, "$leave!error!8!#\n");
 			k.length = strlen(k.msg);
 			k.error = 8;
-			printf("!%s!", k.msg);
+			printf("%s", k.msg);
 			return k;
 		}
 		int indL = -1;
@@ -446,7 +452,7 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z, int cl)
 			sprintf(k.msg, "$leave!error!7!#\n");
 			k.length = strlen(k.msg);
 			k.error = 7;
-			printf("!%s!", k.msg);
+			printf("%s", k.msg);
 			return k;
 		}
 		
@@ -462,7 +468,7 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z, int cl)
 			k.error = 5;	
 		}
 		k.length = strlen(k.msg);
-		printf("!%s!", k.msg);
+		printf("%s", k.msg);
 		return k;		
 	}
 	else if(strcmp(front, "discon") == 0)
@@ -483,7 +489,7 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z, int cl)
 			sprintf(k.msg, "$discon!error!7!#\n");
 			k.length = strlen(k.msg);
 			k.error = 7;
-			printf("!%s!", k.msg);
+			printf("%s", k.msg);
 			return k;
 		}
 		int indL = -1;
@@ -498,37 +504,37 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z, int cl)
 				}
 			}
 		}
-		if(indL == -1)
+		if(indL != -1)
 		{
-			printf("Chyba, hrac neni v zadne lobby!\n");
-			sprintf(k.msg, "$discon!error!6!#\n");
-			k.length = strlen(k.msg);
-			k.error = 6;
-			printf("!%s!", k.msg);
-			return k;
-		}
-		
-		int returnValue = removePlayer(indH, indL);
-		if(returnValue >= 1)
-		{
-			sprintf(k.msg, "$discon!decline!5!#\n");
-			k.error = 5;
+			int returnValue = removePlayer(indH, indL);
+			if(returnValue >= 1)
+			{
+				sprintf(k.msg, "$discon!decline!5!#\n");
+				k.error = 5;
+			}
+			else
+			{
+				sprintf(k.msg, "$discon!accepted!#\n");
+				k.error = 100;
+				//SPECIALNI ERROR, bude predstavovat ukonceni celkove
+				//apklikace jako takove, jednoduse se ukonci spojeni 	
+			}
 		}
 		else
 		{
 			sprintf(k.msg, "$discon!accepted!#\n");
 			k.error = 100;
 			//SPECIALNI ERROR, bude predstavovat ukonceni celkove
-			//apklikace jako takove, jednoduse se ukonci spojeni 	
+			//apklikace jako takove, jednoduse se ukonci spojeni
 		}
 		k.length = strlen(k.msg);
-		printf("!%s!", k.msg);
+		printf("%s", k.msg);
 		return k;
 	}
 	else
 	{
 		printf("Nic ze znamych parametru nesedi na |%s|\n", front);
-		k.error = 5;
+		k.error = 10;
 		k.length = strlen(k.msg);
 		return k;
 	}	
@@ -549,38 +555,36 @@ void *serve_request(void *arg)
 	printf("Hura nove spojeni\n");
 	struct Zprava z;
 	char jmeno[50];
-	do
+
+	//RECIEVE
+	z = getMessage(client_socket);
+	if(z.error == 0)
 	{
-		//RECIEVE
-		z = getMessage(client_socket);
-		if(z.error == 0)
+		printf("Prijato ve formatu: %s\n", z.msg);	
+	}
+	
+	//SEND
+	memset(&jmeno, 0, sizeof(jmeno));	
+	z = rozdeleniZprav(z);
+	
+	if(z.zaznamInd > -1)
+	{
+		for(int i = 0; i < strlen(whitelist[z.zaznamInd]); i++)
 		{
-			printf("Prijato ve formatu: %s\n", z.msg);	
-		}
-		
-		//SEND
-		memset(&jmeno, 0, sizeof(jmeno));	
-		z = rozdeleniZprav(z);
-		
-		if(z.zaznamInd > -1)
-		{
-			for(int i = 0; i < strlen(whitelist[z.zaznamInd]); i++)
+			if(z.msg[i] != '!')
 			{
-				if(z.msg[i] != '!')
-				{
-					jmeno[i] = whitelist[z.zaznamInd][i];
-				}
-				else
-				{
-					jmeno[i] = '\0';
-					break;
-				}
-			}	
+				jmeno[i] = whitelist[z.zaznamInd][i];
+			}
+			else
+			{
+				jmeno[i] = '\0';
+				break;
+			}
 		}	
-		send(client_socket, &z.msg, strlen(z.msg), 0);
-	}while(z.error >= 3);
+	}	
+	send(client_socket, &z.msg, strlen(z.msg), 0);
 		
-	if(z.error == 0)//nedoslo k chybe
+	if(z.error == 0)//nedoslo k chybe v login fazi
 	{
 		//JSEM UZ V MENU S LOBBY
 		addHrac(client_socket, jmeno);
@@ -612,9 +616,15 @@ void *serve_request(void *arg)
 					printf("[%s]: se odpojil od serveru.\n", jmeno);
 					break;
 				}
+				else if(z.error == 100)
+				{
+					printf("[%s]: se odpojil od serveru.\n", jmeno);
+					break;
+				}
 				else
 				{
 					printf("Error jiny: %d\n", z.error);
+					printf("|%s|\n", z.msg);
 				}
 			}
 		}
@@ -634,6 +644,8 @@ int main (void)
 	nactiFileSHesly(passwd);
 	//NACTENI POLE HRACU
 	initHraci();
+	//NACTENI LOBBYN
+	initLobby();
 	
 	int server_socket=0;
 	int client_socket=0;
