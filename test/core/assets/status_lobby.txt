@@ -11,3 +11,5 @@ $create!accpet!# - potvrzeni vytvoreni lobby
 $create!decline!error_kod!# - zamitnuti vytvoreni lobby
 $join!accept!pocet_lidi!Hrac1, Hrac2, ...!# - potvrzeni k pripojeni se ke konkretni lobby s prislusnymi dalsimy informacemi
 $join!decline!error_kod!# - zamitnuti pripojeni
+$lobby!add!Hrac1!# - pridani hrace do pripjene lobby pro klienta
+$lobby!rem!Hrac1!# - odpojeni hrace z lobby pro konkretni pripojenou lobby

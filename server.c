@@ -359,7 +359,7 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z, int cl)
 		printf("%s index pro join hrace do lobby!\n", back);
 		int inL = atoi(back);
 		int inH = -1;
-		for(int i =0;i < length_hraci;i++)
+		for(int i = 0;i < length_hraci;i++)
 		{
 			if(hraci[i].init == 1 && hraci[i].client_socket == cl)
 			{
@@ -376,14 +376,22 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z, int cl)
 			printf("%s", k.msg);
 			return k;
 		}
-		int returnValue = addPlayer(inH, inL);
-		if(returnValue >= 1)
+		int returnValue1 = addPlayer(inH, inL);
+		if(returnValue1 >= 1)
 		{
-			sprintf(k.msg, "$join!decline!%d!#\n", returnValue);
-			k.error = returnValue;
+			sprintf(k.msg, "$join!decline!%d!#\n", returnValue1);
+			k.error = returnValue1;
 		}
 		else
 		{
+			//Poslat hracum v jiz pripojene lobby
+			char textL[100];
+			memset(&textL, 0, sizeof(textL));
+			printf("client socket: %d\n", cl);
+			printf("BC[%s]\n", hraci[getHracIndex(cl)].jmeno);
+			sprintf(textL, "$lobby!add!%s!#\n", hraci[getHracIndex(cl)].jmeno);	
+			broadcastToLobby(lobbies[inL].hraciLobby, cl, textL);
+			
 			sprintf(k.msg, "$join!accept!");
 			char x[2];
 			sprintf(x, "%d!", lobbies[inL].pocetHracu);
@@ -464,6 +472,12 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z, int cl)
 		}
 		else
 		{
+			//Poslat hracum v jiz pripojene lobby
+			char textL[100];
+			memset(&textL, 0, sizeof(textL));
+			sprintf(textL, "$lobby!rem!%s!#\n", hraci[getHracIndex(cl)].jmeno);	
+			broadcastToLobby(lobbies[indL].hraciLobby, cl, textL);
+			
 			sprintf(k.msg, "$leave!accepted!#\n");
 			k.error = 5;	
 		}
@@ -571,7 +585,7 @@ void *serve_request(void *arg)
 	{
 		for(int i = 0; i < strlen(whitelist[z.zaznamInd]); i++)
 		{
-			if(z.msg[i] != '!')
+			if(whitelist[z.zaznamInd][i] != '!')
 			{
 				jmeno[i] = whitelist[z.zaznamInd][i];
 			}
@@ -588,15 +602,14 @@ void *serve_request(void *arg)
 	{
 		//JSEM UZ V MENU S LOBBY
 		addHrac(client_socket, jmeno);
-		int indexH = getHracIndex(client_socket);
 		printf("[%s]: se pripojil na server.\n", jmeno);
 		while(1)
 		{
 			z = getMessage(client_socket);
 			if(z.error == 0)
 			{
-				printf("Prijato: %s\n", z.msg);
-				if(hraci[indexH].stav == 1)
+				printf("\nPrijato: %s\n", z.msg);
+				if(hraci[getHracIndex(client_socket)].stav == 1)
 				{
 					z = rozdeleniZpravyLobby(z, client_socket);
 					if(z.error < 5)
@@ -705,6 +718,8 @@ int main (void)
 	}
 	
 	uvolniWhitelist();
+	uvolniLobby();
+	uvolniHrace();
 	printf("HLAVNI PROCES SKONCIL\n");
 	return 0;
 }

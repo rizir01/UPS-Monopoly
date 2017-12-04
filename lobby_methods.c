@@ -131,6 +131,8 @@ struct Lobby* reduceLobby(int index)
 }
 
 //Pridelat zmenu stavu pri pripojeni do lobby
+//indexHac - index hraci v seznamu hracu
+//indexLobby - index lobby v seznamu lobbyin
 int addPlayer(int indexHrac, int indexLobby)
 {
 	if(indexHrac < 0 || indexHrac >= length_hraci)

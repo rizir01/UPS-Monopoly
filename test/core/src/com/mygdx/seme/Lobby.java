@@ -1,5 +1,7 @@
 package com.mygdx.seme;
 
+import java.util.Arrays;
+
 public class Lobby
 {
 	private String [] hraci;
@@ -17,6 +19,7 @@ public class Lobby
 	
 	public void addPlayer(String jmeno)
 	{
+		System.out.println(Arrays.toString(hraci));
 		boolean nenasel = true;
 		for(int i = 0; i < hraci.length; i++)
 		{
@@ -24,13 +27,17 @@ public class Lobby
 			{
 				nenasel = false;
 				hraci[i] = jmeno;
+				break;
 			}
 		}
 		if(nenasel)
 		{
 			System.out.println("Chyba, seznam jiz plny hracu!");
+			return;
 		}
 		pocetHracu++;
+		System.out.println(Arrays.toString(hraci));
+		System.out.println(pocetHracu);
 	}
 	
 	public void removePlayer(int index)
@@ -45,20 +52,28 @@ public class Lobby
 	
 	public void removePlayer(String jmeno)
 	{
+		System.out.println(Arrays.toString(hraci));
 		boolean nenasel = true;
 		for(int i = 0; i < hraci.length; i++)
 		{
-			if(hraci[i].equals(jmeno))
+			if(hraci[i] != null)
 			{
-				nenasel = false;
-				hraci[i] = null;
+				if(hraci[i].equals(jmeno))
+				{
+					nenasel = false;
+					hraci[i] = null;
+					break;
+				}				
 			}
 		}
 		if(nenasel)
 		{
 			System.out.println("Chyba, v seznamu neni hrac s nazvem " + jmeno + "!");
+			return;
 		}
 		pocetHracu--;
+		System.out.println(Arrays.toString(hraci));
+		System.out.println(pocetHracu);
 	}
 	
 	public int getPocetHrau()

@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Scanner;
 
@@ -81,6 +82,10 @@ public class TestClient extends Thread
 				default:System.out.println("Chyba, stav hrace spatne definovany!");
 				        break;
 				}
+			}
+			catch(SocketException se)
+			{
+				
 			}
 			catch(InterruptedException e)
 			{
@@ -165,11 +170,11 @@ public class TestClient extends Thread
 				String [] names = Assets.separeter(input[2], ',');
 				//Pripojit se do lobby, o kterou jsem si predtim zazadal, prevzit hodnoty
 				int pocetL = Integer.parseInt(input[1]);
-				LobbyScreen.lobbies[LobbyScreen.selectedLobby].addPlayer(LoginScreen.login);
-				LobbyScreen.currentLobby = new String[pocetL];
+				Monopoly.LobbyScreen.currentLobby = new String[4];
 				for (int i = 0; i < pocetL; i++)
 				{
-					LobbyScreen.currentLobby[i] = names[i];
+					LobbyScreen.lobbies[LobbyScreen.selectedLobby].addPlayer(names[i]);
+					Monopoly.LobbyScreen.currentLobby[i] = names[i];
 				}
 				LobbyScreen.drawAllInfo = true;
 			}
@@ -188,6 +193,40 @@ public class TestClient extends Thread
 					   break;
 				default:System.out.println("Nejaka jina chyba nedefinovana zde!");
 						break;
+				}
+			}
+			else
+			{
+				System.out.println("Spatne poslany nejaky jiny parametr " + back + "!");
+				return 1;
+			}
+			return 0;
+		}
+		else if(front.equals("lobby"))
+		{
+			String [] input = Assets.separeter(back, '!');
+			if(input[0].equals("add"))
+			{
+				LobbyScreen.lobbies[LobbyScreen.selectedLobby].addPlayer(input[1]);
+				for(int i = 0; i < 4; i++)
+				{
+					if(Monopoly.LobbyScreen.currentLobby[i] == null)
+					{
+						Monopoly.LobbyScreen.currentLobby[i] = input[1];
+						break;
+					}
+				}
+			}
+			else if(input[0].equals("rem"))
+			{
+				LobbyScreen.lobbies[LobbyScreen.selectedLobby].removePlayer(input[1]);
+				for(int i = 0; i < 4; i++)
+				{
+					if(Monopoly.LobbyScreen.currentLobby[i].equals(input[1]))
+					{
+						Monopoly.LobbyScreen.currentLobby[i] = null;
+						break;
+					}
 				}
 			}
 			else

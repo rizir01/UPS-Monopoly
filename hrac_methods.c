@@ -18,7 +18,9 @@ int removeHracSoc(int clie_soc);
 
 int getHracIndex(int socket);
 
-int broadcastHrac();
+int broadcastHraci(char *text);
+
+int broadcastToLobby(int *hraciX, int SocketHraceVynechat, char *text);
 
 struct Hrac* boostHraci();
 
@@ -100,14 +102,20 @@ int uvolniHrace()
 int getHracIndex(int socket)
 {
 	int ind = -1;
+	//printf("length hraci: %d\n", length_hraci);
 	for(int i = 0;i < length_hraci; i++)
 	{
-		if(hraci[i].client_socket == socket)
+		//printf("%s\n",hraci[i].jmeno);
+		if(hraci[i].init == 1)
 		{
-			ind = i;
-			break;
+			if(hraci[i].client_socket == socket)
+			{
+				ind = i;
+				break;
+			}	
 		}
 	}
+	//printf("index hrace v seznamu: %d\n", ind);
 	return ind;
 }
 
@@ -225,10 +233,10 @@ int removeHracSoc(int clie_soc)
 //prevzaty z hlavni funkce prekopirovat
 //do noveho pole charu, jelikoz pak se to
 //neposle!!!
-int broadcastHrac(char *text)
+int broadcastHraci(char *text)
 {
 	pthread_mutex_lock(&lock);
-	char text1[105] = "";
+	char text1[1000] = "";
 	strcpy(text1, text);
 	for(int i = 0; i < length_hraci; i++)
 	{
@@ -240,6 +248,57 @@ int broadcastHrac(char *text)
 	}	
 	pthread_mutex_unlock(&lock);
 }
+
+int broadcastToLobby(int *hraciX, int SocketHraceVynechat, char *text)
+{
+	pthread_mutex_lock(&lock);
+	char text1[1000] = "";
+	strcpy(text1, text);
+	printf("broadcast: %s", text1);
+	//printf("%d %d %d %d\n", hraciX[0], hraciX[1], hraciX[2], hraciX[3]);
+	//Poslani samotnych zprav
+	for(int i = 0; i < 4; i++)
+	{
+		if(hraciX[i] != -1 && hraci[hraciX[i]].client_socket != SocketHraceVynechat)
+		{
+			//printf("%d \n", hraciX[i]);
+			send(hraci[hraciX[i]].client_socket, &text1, strlen(text1), 0);
+		}
+	}
+	pthread_mutex_unlock(&lock);		
+}
+
+/**
+	Seradit indexy
+	int tmp;
+	int nenasel = 1;
+	int maxIndex = 3;//Length - 1;
+	while(nenasel == 1)
+	{
+		int max = hraciX[maxIndex];
+		int indexM = maxIndex;
+		for(int i = 0; i < maxIndex; i++)
+		{
+			if(hraciX[i] > max)
+			{
+				max = hraciX[i];
+				indexM = i;
+			}
+		}
+		tmp = hraciX[maxIndex];
+		hraciX[maxIndex] = max;
+		hraciX[indexM] = tmp;
+		if(maxIndex == 1)
+		{
+			nenasel = 0;
+		}
+		else
+		{
+			maxIndex--;		
+		}
+	}
+*/
+
 
 
 

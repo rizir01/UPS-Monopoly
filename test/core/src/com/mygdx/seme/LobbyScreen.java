@@ -38,7 +38,7 @@ public class LobbyScreen implements Screen, InputProcessor
 	
 	static boolean drawAllInfo = false;
 	
-	static String [] currentLobby;
+	String [] currentLobby;
 	
 	public LobbyScreen(Monopoly mono)
 	{
@@ -107,7 +107,7 @@ public class LobbyScreen implements Screen, InputProcessor
 		{
 			for(int i = 0; i < 4; i++)
 			{
-				if(currentLobby.length - 1 < i)
+				if(currentLobby[i] == null)
 				{
 					drawPlayerReadyInfo(x, y, 500, 100, "--empty--", false);
 				}
@@ -294,6 +294,7 @@ public class LobbyScreen implements Screen, InputProcessor
 					drawAllInfo = false;
 					selectedLobby = -1;
 					buttonClickDelay = 25;
+					refreshDelay = 5;
 				}
 			}
 		}
