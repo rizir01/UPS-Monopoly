@@ -36,9 +36,15 @@ public class LobbyScreen implements Screen, InputProcessor
 	
 	static int selectedLobby = -1;//Index vybrane lobby
 	
+	static boolean ready = false;//Jestli jsem "JA" ready
+	
 	static boolean drawAllInfo = false;
 	
 	String [] currentLobby;
+	
+	static boolean countDown = false;
+	
+	static long timeC;
 	
 	public LobbyScreen(Monopoly mono)
 	{
@@ -77,6 +83,17 @@ public class LobbyScreen implements Screen, InputProcessor
 		{
 			buttonClickDelay--;
 		}
+		
+		//Nastaveni casomiry
+		if(countDown)
+		{
+			if(System.currentTimeMillis() - timeC >= 15000)
+			{
+				Monopoly.LoginScreen.sendToThread("GUI", "$game!done!#");
+				//System.out.println("Posilam zpravu o tom, ze jdu do hry");
+				countDown = false;
+			}
+		}
 	}
 
 	@Override
@@ -113,11 +130,20 @@ public class LobbyScreen implements Screen, InputProcessor
 				}
 				else
 				{
-					drawPlayerReadyInfo(x, y, 500, 100, currentLobby[i], false);					
+					drawPlayerReadyInfo(x, y, 500, 100, currentLobby[i], false);
+					if(lobbies[selectedLobby].getReady()[i])
+					{
+						drawText(x + 530, height - (y + 35), "READY", Color.GREEN);
+					}
 				}
 				y += 100 + 30; 
 			}
 			drawButton(260, height - 105, 200, 75, "LEAVE");
+			drawButton(730, height - 105, 200, 75, "READY");
+			if(countDown)
+			{
+				drawText(500, 50, "" + (int)(15 -(System.currentTimeMillis() - timeC) * 0.001), Color.BLUE);
+			}
 		}
 		else
 		{
@@ -139,6 +165,15 @@ public class LobbyScreen implements Screen, InputProcessor
 			}		
 		}	
 		drawButton(30, height - 105, 200, 75, "DISCONNECT");
+	}
+	
+	public void drawText(float x, float y, String text, Color color)
+	{
+		batch.begin();
+			font.setColor(color);
+			font.draw(batch, text, x, y);
+		batch.end();
+		font.setColor(Color.BLACK);
 	}
 	
 	public void drawButton(float x, float y, float widthX, float widthY, String text)
@@ -226,7 +261,7 @@ public class LobbyScreen implements Screen, InputProcessor
 		if(Gdx.input.isTouched() && buttonClickDelay == 0)//Pro tlacitka kde je potreba delay!!
 		{
 			//Kontrola stisknuti nejake lobby a vraceni indexu lobby do hodnoty
-			if(lobbies != null && !drawAllInfo)
+			if(lobbies != null && !drawAllInfo && selectedLobby == -1)
 			{
 				float x = 30;
 				float y = 30;
@@ -246,6 +281,7 @@ public class LobbyScreen implements Screen, InputProcessor
 				{
 					selectedLobby = -1;					
 				}
+				return;
 			}
 			
 			//Kontrola jestli nejake z tlacitek nebylo spusteno
@@ -292,9 +328,24 @@ public class LobbyScreen implements Screen, InputProcessor
 					Monopoly.LoginScreen.sendToThread("GUI", "$leave!0#");
 					Monopoly.LobbyScreen.lobbies[selectedLobby].removePlayer(LoginScreen.login);
 					drawAllInfo = false;
-					selectedLobby = -1;
+					//selectedLobby = -1;
 					buttonClickDelay = 25;
 					refreshDelay = 5;
+				}
+				else if(isObjectTouched(touch, 730, height - 105, 200, 75))//READY
+				{
+					if(ready)
+					{
+						Monopoly.LoginScreen.sendToThread("GUI", "$ready!0#");
+						lobbies[selectedLobby].removeReady(Monopoly.LoginScreen.login);
+					}
+					else
+					{
+						Monopoly.LoginScreen.sendToThread("GUI", "$ready!1#");						
+						lobbies[selectedLobby].addReady(Monopoly.LoginScreen.login);
+					}
+					ready = !ready;
+					buttonClickDelay = 25;
 				}
 			}
 		}

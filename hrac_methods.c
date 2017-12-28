@@ -18,9 +18,13 @@ int removeHracSoc(int clie_soc);
 
 int getHracIndex(int socket);
 
+int sendMessage(int client_soc, char *text);
+
 int broadcastHraci(char *text);
 
 int broadcastToLobby(int *hraciX, int SocketHraceVynechat, char *text);
+
+int broadcastToAllLobby(int *hraciX, char *text);
 
 struct Hrac* boostHraci();
 
@@ -249,6 +253,18 @@ int broadcastHraci(char *text)
 	pthread_mutex_unlock(&lock);
 }
 
+int sendMessage(int client_soc, char *text)
+{
+	pthread_mutex_lock(&lock);
+	
+	char text1[1000] = "";
+	strcpy(text1, text);
+	printf("message to %d: %s", client_soc, text1);
+	send(client_soc, &text, strlen(text1), 0);
+	
+	pthread_mutex_unlock(&lock);
+}
+
 int broadcastToLobby(int *hraciX, int SocketHraceVynechat, char *text)
 {
 	pthread_mutex_lock(&lock);
@@ -266,6 +282,25 @@ int broadcastToLobby(int *hraciX, int SocketHraceVynechat, char *text)
 		}
 	}
 	pthread_mutex_unlock(&lock);		
+}
+
+int broadcastToAllLobby(int *hraciX, char *text)
+{
+	pthread_mutex_lock(&lock);
+	char text1[1000] = "";
+	strcpy(text1, text);
+	printf("broadcast all: %s", text1);
+
+	//Poslani samotnych zprav
+	for(int i = 0; i < 4; i++)
+	{
+		if(hraciX[i] != -1)
+		{
+			//printf("%d \n", hraciX[i]);
+			send(hraci[hraciX[i]].client_socket, &text1, strlen(text1), 0);
+		}
+	}
+	pthread_mutex_unlock(&lock);
 }
 
 /**

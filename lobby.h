@@ -7,6 +7,11 @@ struct Lobby
 	//o hraci
 	int hraciLobby[4];
 	
+	//Pole hracu, ktere predstavuje
+	//Jestli je ten ktery hrac jiz
+	//pripraven hrat hru
+	int hraciReady[4];
+	
 	//Nazev lobby
 	char lobbyName[100];
 	

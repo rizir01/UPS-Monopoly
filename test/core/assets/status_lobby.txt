@@ -2,6 +2,8 @@ CLIENT -> SERVER
 $refresh!0# - aktualizovat si seznam lobbyn v menu
 $create!nazev_lobby# - vytvorit lobby
 $join!index_lobby# - pripojit se ke konkretni lobby
+$ready!0 nebo 1# - oznaceni ze jsem pripraven spustit hru
+$game!done!# - klient se presunul do hry a ceka na vsechny ostatni
 $leave!0# - opustit konkretni lobby
 $discon!0# - odhlasit se
 
@@ -11,5 +13,10 @@ $create!accpet!# - potvrzeni vytvoreni lobby
 $create!decline!error_kod!# - zamitnuti vytvoreni lobby
 $join!accept!pocet_lidi!Hrac1, Hrac2, ...!# - potvrzeni k pripojeni se ke konkretni lobby s prislusnymi dalsimy informacemi
 $join!decline!error_kod!# - zamitnuti pripojeni
-$lobby!add!Hrac1!# - pridani hrace do pripjene lobby pro klienta
+$ready!add!Hrac1!# - pridani, ze Hrac1 je ready
+$ready!rem!Hrac1!# - odebrani, ze Hrac1 je ready
+$ready!accept!# - jestli pridani provedlo uspesne
+$lobby!add!Hrac1!# - pridani hrace do pripojene lobby pro klienta
 $lobby!rem!Hrac1!# - odpojeni hrace z lobby pro konkretni pripojenou lobby
+$game!start!# - zacina odpocet do hry
+$game!stop!# - preruseni zacatku hry z duvodu unready nebo odpojeni hrace z lobby

@@ -64,7 +64,11 @@ struct Zprava getMessage(int client_socket)//Monza pridelat stav erroru ($asda#a
 		{
 		    if(zac == 0)
 		    {
-		    	printf("Spatny format zpravy (# drive nez $)!\n");
+		    	if(pole[0] != '0')
+		    	{
+		    		printf("Zprava: |%s|\n", pole);	
+				}
+				printf("Spatny format zpravy (# drive nez $)!\n");
 		    	p.error = 1;
 		    	return p;
 			}
@@ -353,6 +357,35 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z, int cl)
 		printf("%s", k.msg);
 		return k; 
 	}
+	else if(strcmp(front, "game") == 0)
+	{
+		int inH = -1;
+		for(int i = 0;i < length_hraci;i++)
+		{
+			if(hraci[i].init == 1 && hraci[i].client_socket == cl)
+			{
+				inH = i;
+				break;
+			}
+		}
+		if(inH == -1)
+		{
+			printf("Chyba, hrac nebyl nalezen v seznamu hracu!\n");
+			sprintf(k.msg, "$game!decline!4!#\n");
+			k.length = strlen(k.msg);
+			k.error = 4;
+			printf("%s", k.msg);
+			return k;
+		}
+		
+		hraci[inH].stav = 2;//presun do hry
+		
+		sprintf(k.msg, "$game!accept!#\n");
+		k.length = strlen(k.msg);
+		k.error = 5;
+		printf("%s", k.msg);
+		return k;
+	}
 	else if(strcmp(front, "join") == 0)
 	{
 		//Pridat index tohoto hrace do lobby s indexem lobby
@@ -472,7 +505,7 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z, int cl)
 		}
 		else
 		{
-			//Poslat hracum v jiz pripojene lobby
+			//Poslat hracum v jiz pripojene lobby ze se hrac opdojil
 			char textL[100];
 			memset(&textL, 0, sizeof(textL));
 			sprintf(textL, "$lobby!rem!%s!#\n", hraci[getHracIndex(cl)].jmeno);	
@@ -484,6 +517,77 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z, int cl)
 		k.length = strlen(k.msg);
 		printf("%s", k.msg);
 		return k;		
+	}
+	else if(strcmp(front, "ready") == 0)
+	{
+		//priadni nebo odebrani u hrace v lobby jestli jee ready nebo neni
+		int ready = atoi(back);
+		//printf("ready z atoi: %d\n", ready);
+		int indH = -1;
+		for(int i = 0;i < length_hraci;i++)
+		{
+			if(hraci[i].init == 1 && hraci[i].client_socket == cl)
+			{
+				indH = i;
+				break;
+			}
+		}
+		if(indH == -1)
+		{
+			printf("Chyba, hrac nebyl nalezen v seznamu hracu!\n");
+			sprintf(k.msg, "$ready!error!5!#\n");
+			k.length = strlen(k.msg);
+			k.error = 5;
+			printf("%s", k.msg);
+			return k;
+		}
+		int indL = -1;
+		for(int i = 0; i < length_lobbies; i++)
+		{
+			for(int j = 0; j < 4; j++)
+			{
+				if(lobbies[i].hraciLobby[j] == indH)
+				{
+					indL = i;
+					break;
+				}
+			}
+		}
+		if(indL != -1)
+		{
+			int returnValue = changeReady(indH, indL, ready);
+			if(returnValue >= 1)
+			{
+				sprintf(k.msg, "$ready!error!%d!#\n", returnValue);
+				k.length = strlen(k.msg);
+				k.error = 6 + returnValue;//7 a vyse errory
+			}
+			else
+			{
+				//Poslat hracum v jiz pripojene lobby ze rac zmenil stav na ready/unready
+				char textL[100];
+				memset(&textL, 0, sizeof(textL));
+				if(ready == 0)
+				{
+					sprintf(textL, "$ready!rem!%s!#\n", hraci[getHracIndex(cl)].jmeno);		
+				}
+				else
+				{
+					sprintf(textL, "$ready!add!%s!#\n", hraci[getHracIndex(cl)].jmeno);	
+				}
+				broadcastToLobby(lobbies[indL].hraciLobby, cl, textL);
+			}
+		}
+		else
+		{
+			sprintf(k.msg, "$ready!error!6!#\n");
+			k.length = strlen(k.msg);
+			k.error = 6;
+		}
+		sprintf(k.msg, "$ready!accept!#\n");
+		k.length = strlen(k.msg);
+		printf("%s", k.msg);
+		return k;
 	}
 	else if(strcmp(front, "discon") == 0)
 	{
@@ -554,6 +658,51 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z, int cl)
 	}	
 }
 
+struct Zprava rozdeleniZpravyHra(struct Zprava z, int cl)
+{
+	struct Zprava k;
+	k.zaznamInd = -1;
+	char front[10];
+	char back[51];
+	memset(&front, 0, sizeof(front));
+	memset(&back, 0, sizeof(back));
+	int length;
+	int naselZnacku = 0;//bool
+	for(int i = 0; i < z.length; i++)
+	{
+		if(z.msg[i] == '!')
+		{
+			naselZnacku = 1;
+			memcpy(back, &z.msg[i + 1], z.length - (i + 1));
+			break;
+		}
+		else
+		{
+			front[i] = z.msg[i];
+		}
+	}
+	if(naselZnacku == 0)
+	{
+		strcpy(k.msg, "V zadanem textu neni symbol '!'.\n");
+		k.length = strlen(k.msg);
+		k.error = 2;
+		return k;
+	}
+	//printf("%s\n", front);
+	//printf("%s\n", back);
+	if(strcmp(front, "refresh") == 0)
+	{
+		
+	}
+	else
+	{
+		printf("Nic ze znamych parametru nesedi na |%s|\n", front);
+		k.error = 10;
+		k.length = strlen(k.msg);
+		return k;
+	}
+}
+
 //Telo vlakna co zprostredkuje nejdrive prijem
 //loginu a hesla a nasledne posle klientovi jestli
 //byl uspesne prihlasen, nasledne zprostredkuje chat
@@ -597,6 +746,9 @@ void *serve_request(void *arg)
 		}	
 	}	
 	send(client_socket, &z.msg, strlen(z.msg), 0);
+	
+	//Spusten odpocet
+	int count = 0;
 		
 	if(z.error == 0)//nedoslo k chybe v login fazi
 	{
@@ -618,18 +770,51 @@ void *serve_request(void *arg)
 					}
 					else if(z.error == 100)
 					{
+						printf("[%s]: se odpojil od serveru.\n", jmeno);
 						break;
 					}
-				}				
-			}
-			else
-			{
-				if(z.error <= 4)
-				{
-					printf("[%s]: se odpojil od serveru.\n", jmeno);
-					break;
+					int inLo = getIndexLobbyWhereIsHrac(getHracIndex(client_socket));
+					if(count == 0)
+					{
+						printf("count == 0\n");
+						if(isEveryoneReady(inLo) == 1)
+						{
+							printf("count == 0, proslo\n");
+							//spustit countdown do zacatku hry a posli to vsem v lobby
+							broadcastToAllLobby(lobbies[inLo].hraciLobby, "$game!start!#\n");
+							count = 1;
+						}	
+					}
+					else
+					{
+						printf("count == 1\n");
+						//Kontrolovat, jestli nekdo nedal unready nebo to nelavnul	
+						if(isEveryoneReady(inLo) == 0)
+						{
+							printf("count == 1, proslo\n");
+							broadcastToAllLobby(lobbies[inLo].hraciLobby, "$game!stop!#\n");
+							count = 0;
+						}
+					}
 				}
-				else if(z.error == 100)
+				else if(hraci[getHracIndex(client_socket)].stav == 2)
+				{
+					printf("Hrac je ve 2. stavu!\n");
+					z = rozdeleniZpravyHra(z, client_socket);
+					if(z.error < 5)
+					{
+						send(client_socket, &z.msg, strlen(z.msg), 0);
+					}
+					else if(z.error == 100)
+					{
+						printf("[%s]: se odpojil od serveru.\n", jmeno);
+						break;
+					}
+				}
+			}
+			else//Spatny format zpravy
+			{
+				if(z.error < 5 || z.error == 100)
 				{
 					printf("[%s]: se odpojil od serveru.\n", jmeno);
 					break;

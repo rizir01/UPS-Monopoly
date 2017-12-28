@@ -31,7 +31,7 @@ public class TestClientRecieve extends Thread
 				String message = (String)TestClient.bf.readLine();
 				if(message == null)
 				{
-					System.out.println("Spadl socket nebo server!");
+					System.out.println("Odpojily jsme se od serveru!");
 					break;
 				}
 				else if(message.charAt(0) != '$')

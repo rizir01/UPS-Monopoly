@@ -236,6 +236,55 @@ public class TestClient extends Thread
 			}
 			return 0;
 		}
+		else if(front.equals("ready"))
+		{
+			String [] input = Assets.separeter(back, '!');
+			if(input[0].equals("add"))
+			{
+				LobbyScreen.lobbies[LobbyScreen.selectedLobby].addReady(input[1]);
+			}
+			else if(input[0].equals("rem"))
+			{
+				LobbyScreen.lobbies[LobbyScreen.selectedLobby].removeReady(input[1]);
+			}
+			else if(input[0].equals("accept"))
+			{
+				System.out.println("READY - probehlo uspesne");
+			}
+			else if(input[0].equals("error"))
+			{
+				System.out.println("Doslo k chybe prenosu cislo " + input[1]);
+				return 1;
+			}
+			else
+			{
+				System.out.println("Spatne poslany nejaky jiny parametr " + back + "!");
+				return 1;
+			}
+			return 0;
+		}
+		else if(front.equals("game"))
+		{
+			String [] input = Assets.separeter(back, '!');
+			if(input[0].equals("start"))
+			{
+				//Nastavit casomiru
+				LobbyScreen.countDown = true;
+				LobbyScreen.timeC = System.currentTimeMillis();
+			}
+			else if(input[0].equals("stop"))
+			{
+				//Zastavit casomiru a resetovat
+				LobbyScreen.countDown = false;
+				LobbyScreen.timeC = 0;
+			}
+			else
+			{
+				System.out.println("Spatne poslany nejaky jiny parametr " + back + "!");
+				return 1;
+			}
+			return 0;
+		}
 		else
 		{
 			System.out.println("Neznama zprava " + instrukce + "!");

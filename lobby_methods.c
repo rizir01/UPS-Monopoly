@@ -19,6 +19,12 @@ int addPlayer(int indexHrac, int indexLobby);
 
 int removePlayer(int indexHrac, int indexLobby);
 
+int changeReady(int indexHrac, int indexLobby, int ready);
+
+int isEveryoneReady(int indexLobby);
+
+int getIndexLobbyWhereIsHrac(int indexHrace);
+
 struct Lobby* boostLobby();
 
 struct Lobby* reduceLobby(int index);
@@ -41,6 +47,7 @@ int initLobby()
 	
 	lobbies = (struct Lobby*)malloc(sizeof(struct Lobby) * (length_lobbies + 1));
 	memset(&lobbies[0].hraciLobby, -1, sizeof(int) * 4);
+	memset(&lobbies[0].hraciReady, 0, sizeof(int) * 4);
 	strcpy(lobbies[0].lobbyName, "default");
 	lobbies[0].pocetHracu = 0;
 	lobbies[0].idLobby = id_plus_lobby++;
@@ -62,6 +69,7 @@ int addLobby(char *nazev)
 	
 	lobbies = boostLobby();
 	memset(&lobbies[length_lobbies - 1].hraciLobby, -1, sizeof(int) * 4);
+	memset(&lobbies[length_lobbies - 1].hraciReady, 0, sizeof(int) * 4);
 	memset(&lobbies[length_lobbies - 1].lobbyName, 0, sizeof(lobbies[length_lobbies - 1].lobbyName));
 	memcpy(lobbies[length_lobbies - 1].lobbyName, nazev, sizeof(nazev));
 	
@@ -92,6 +100,7 @@ struct Lobby* boostLobby()
 	for(int i = 0; i < length_lobbies; i++)
 	{
 		memcpy(moreLobbies[i].hraciLobby, lobbies[i].hraciLobby, sizeof(lobbies[i].hraciLobby));
+		memcpy(moreLobbies[i].hraciReady, lobbies[i].hraciReady, sizeof(lobbies[i].hraciReady));
 		strcpy(moreLobbies[i].lobbyName, lobbies[i].lobbyName);
 		moreLobbies[i].idLobby = lobbies[i].idLobby;
 		moreLobbies[i].pocetHracu = lobbies[i].pocetHracu;
@@ -117,6 +126,7 @@ struct Lobby* reduceLobby(int index)
 		if(i != index)
 		{
 			memcpy(lessLobbies[j].hraciLobby, lobbies[i].hraciLobby, sizeof(lobbies[i].hraciLobby));
+			memcpy(lessLobbies[j].hraciReady, lobbies[i].hraciReady, sizeof(lobbies[i].hraciReady));
 			strcpy(lessLobbies[j].lobbyName, lobbies[i].lobbyName);
 			lessLobbies[j].idLobby = lobbies[i].idLobby;
 			lessLobbies[j].pocetHracu = lobbies[i].pocetHracu;
@@ -203,6 +213,7 @@ int removePlayer(int indexHrac, int indexLobby)
 		{
 			nasel = 1;
 			lobbies[indexLobby].hraciLobby[i] = -1;	
+			lobbies[indexLobby].hraciReady[i] = 0;
 			break;
 		}
 	}
@@ -216,6 +227,91 @@ int removePlayer(int indexHrac, int indexLobby)
 	
 	pthread_mutex_unlock(&lockLobby);
 	return 0;
+}
+
+int changeReady(int indexHrac, int indexLobby, int ready)
+{
+	if(indexHrac < 0 || indexHrac >= length_hraci)
+	{
+		printf("[READY]Index hrace %d neni ve stanovenych mezich!", indexHrac);
+		return 1;
+	}
+	if(indexLobby < 0 || indexLobby >= length_lobbies)
+	{
+		printf("[READY]Index lobby %d neni ve stanovenych mezich!", indexHrac);
+		return 1;
+	}
+	int ind = -1;
+	if(hraci[indexHrac].init == 0)
+	{
+		printf("[READY]Na zadanem indexu %d neni zadny hrac!", indexHrac);
+		return 2;
+	}
+	pthread_mutex_lock(&lockLobby);
+	
+	int nasel = 0;//bool
+	int indP = -1;
+	for(int i = 0; i < 4; i++)
+	{
+		if(lobbies[indexLobby].hraciLobby[i] == indexHrac)
+		{
+			nasel = 1;
+			indP = i;	
+			break;
+		}
+	}
+	if(nasel == 0)
+	{
+		pthread_mutex_unlock(&lockLobby);
+		printf("[READY]Nenasel se hrac v lobby %d s indexem %d!\n", indexLobby, indexHrac);
+		return 3;
+	}
+	
+	if(lobbies[indexLobby].hraciReady[indP] == ready)
+	{
+		pthread_mutex_unlock(&lockLobby);
+		printf("[READY]Nastaveni ready v lobby %d s indexem hrace %d je jiz nastaveno na stejnou hodnotu (%d)!\n", indexLobby, indexHrac, ready);
+		return 4;
+	}
+	lobbies[indexLobby].hraciReady[indP] = ready;
+	
+	pthread_mutex_unlock(&lockLobby);
+	return 0;
+}
+
+int getIndexLobbyWhereIsHrac(int indexHrace)
+{
+	for(int i = 0; i < length_lobbies; i++)
+	{
+		for(int j = 0; j < 4; j++)
+		{
+			if(lobbies[i].hraciLobby[j] == indexHrace)
+			{
+				return i;
+			}
+		}
+	}
+	return -1;
+}
+
+int isEveryoneReady(int indexLobby)
+{
+	int p = 0;
+	for(int i = 0; i < 4; i++)
+	{
+		if(lobbies[indexLobby].hraciReady[i] == 1)
+		{
+			p++;
+		}
+	}
+	if(p > 0 && p == lobbies[indexLobby].pocetHracu)
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
 }
 
 int uvolniLobby()
