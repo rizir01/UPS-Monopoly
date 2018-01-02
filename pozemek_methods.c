@@ -33,12 +33,14 @@ struct Pozemek makePozemek(char *nazevP, char typ, int cenaP, int cenaU, char* u
 				 poz.typPozemku = 1;//pozemek
 				 poz.kategorie[0] = kat;
 				 poz.kategorie[1] = katPoc;
+				 pthread_mutex_lock(&lockSep);
 				 separeter(up, ';');
 				 for(int i = 0; i < 6; i++)// nebo length_p
 				 {
 				 	poz.zisky[i] = atoi(sepa[i]);
 				 	//printf("%d\n", poz.zisky[i]);
-				 }	 
+				 }
+				 pthread_mutex_unlock(&lockSep);	 
 				 break;
 		case 'R':poz.cena = 200;
 				 poz.typPozemku = 2;//pozemek

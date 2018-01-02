@@ -1,0 +1,26 @@
+CLIENT -> SERVER
+$game!loaded# - kdyz uz mam nactenou mapu a cekam na ostatni hrace primo ve hre
+$game!roll# - hrac kliknul na tlacitko hodit kostkou
+$game!buy# - hrac si vybral moznost koupit pozmemek
+$game!auction# - hrac si vybral moznost aukce pozemku
+$aukce!castka# - hrac zadava <castka> kolik je ochoten prihodit na pozemek
+$aukce!end# - hrace se nadale nechce zucastnit aukce
+$leave!0# - opustit konkretni hru a zaroven lobby
+$discon!0# - odhlasit se
+
+SERVER -> CLIENT
+$game!start!kostka1,kostka2!# - hrac hodil kostka1 a kostka2
+$game!end!# - hrac ukoncil svuj tah
+$game!lose!Hrac!# - Hrac prohral hru, pokud je to ten samy jako klient, uz se nebude moct ucastnit hry
+$game!again!# - Z duovdy logicky, hry se muze stat, ze konkretni hrac musi hrat znova, proto tato zprava
+$game!pay!index hrace nebo nazev Hrace!castka!# - Hrac(nebo index) ztraci <castka>
+$game!gojail!# - pro podstavce goToJail presmerovani do veznice
+$game!buy!index hrace nebo nazev HRace!pozice(index)!# - Hrac(nebo index) ziskava pozemek na indexu<pozice>
+$game!aukce!done!index!#- hrac s <index> ukoncil ucast na aukci
+$game!aukce!fail!cislo!# - pri ziskani hodnot od hrace byli zadany spatne parametry
+$game!aukce!max!Hrac1!hodnota!# - Hrac1 zadal novou hodnotu za pozemek <hodnota>
+$game!a!n!# - 
+$game!aukce!end!# - konec aukce, a prirazeni hodnot z max message
+$game!get!index hrace nebo nazev Hrace!castka!# - Hrac(index) ziskava <castka>
+$game!chest!stav!# - Hrac zpracuje ze <stav> co se ma provest z community chest
+$game!chance!stav!# - Hrac zpracuje ze <stav> co se ma provest z chance

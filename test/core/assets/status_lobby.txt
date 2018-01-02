@@ -3,7 +3,7 @@ $refresh!0# - aktualizovat si seznam lobbyn v menu
 $create!nazev_lobby# - vytvorit lobby
 $join!index_lobby# - pripojit se ke konkretni lobby
 $ready!0 nebo 1# - oznaceni ze jsem pripraven spustit hru
-$game!done!# - klient se presunul do hry a ceka na vsechny ostatni
+$game!done# - klient se presunul do hry a ceka na vsechny ostatni
 $leave!0# - opustit konkretni lobby
 $discon!0# - odhlasit se
 

@@ -8,9 +8,13 @@
 #include <string.h>
 #include <pthread.h>
 
+//Pomocne pro random genereator
+int startRand = 1;
+
 //Separator pomoc. promene
 char sepa[25][100];
 int length_p;
+pthread_mutex_t lockSep = PTHREAD_MUTEX_INITIALIZER;
 
 /**
  * Funkce, ktera rozdeli String na tolik casti, kolik je tam
@@ -80,5 +84,22 @@ void separeter(char *str1, char znak)
 		strcpy(sepa[indexPole], tmp);
 		//result[indexPole] = tmp;
 	}
-	length_p = l;
+	if(length == 0)
+	{
+		length_p = 0;
+	}
+	else
+	{
+		length_p = l;	
+	}
+}
+
+int randint(int n)
+{
+	if(startRand)
+	{
+		srand(time(NULL));
+		startRand = 0;
+	}
+	return rand() % n;
 }

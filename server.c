@@ -8,9 +8,11 @@
 #include <string.h>
 #include <pthread.h>
 #include "hrac.h"
-#include "hrac_methods.c"
 #include "lobby.h"
+#include "game.h"
+#include "hrac_methods.c"
 #include "lobby_methods.c"
+#include "game_methods.c"
 
 //WHITELIST serveru login/heslo
 FILE *passwd;
@@ -658,6 +660,8 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z, int cl)
 	}	
 }
 
+//ZPracovani logicke zpravy od klienta, porovnani spravnosti
+//nasledne provedeni dane akce.
 struct Zprava rozdeleniZpravyHra(struct Zprava z, int cl)
 {
 	struct Zprava k;
@@ -844,6 +848,10 @@ int main (void)
 	initHraci();
 	//NACTENI LOBBYN
 	initLobby();
+	//NACTENI MAPY
+	setupGameBoard();
+	//NACTENI HER
+	initGames();
 	
 	int server_socket=0;
 	int client_socket=0;
@@ -903,6 +911,8 @@ int main (void)
 	}
 	
 	uvolniWhitelist();
+	uvolniGameBoard();
+	uvolniGames();
 	uvolniLobby();
 	uvolniHrace();
 	printf("HLAVNI PROCES SKONCIL\n");
