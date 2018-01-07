@@ -14,6 +14,7 @@ public class GoToJail extends Card
 		hrac.jail = true;
 		System.out.println(hrac.getName() + " jde do vezeni!");
 		//transmission JAIL j!i!
+		Table.transmission("j!");
 	}
 	
 }

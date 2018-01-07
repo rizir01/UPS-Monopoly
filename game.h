@@ -1,5 +1,6 @@
 #ifndef GAME_H
 #define GAME_H
+#include "aukce.h"
 struct Game
 {
 	//Ke ktere lobby tato konkretni hra patri
@@ -26,6 +27,12 @@ struct Game
 	//konkretniho hrace je zde opet seznam jmen hracu
 	char jmena[4][50];
 	
+	//Posledni hod kostkami v normalnim rezimu,
+	//tedy pouze hod kostkami o posun, ne na vezeni
+	//nebo na udrzbu atd.
+	//specialni tvar pro funkci - gameRulesPost
+	int poslHod[2];
+	
 	//Pozice kazdeho hrace na mape
 	int poziceHracu[4];
 	
@@ -48,5 +55,7 @@ struct Game
 	//jsou upgrady pritomny
 	char budovy[4][50];
 	char upgrady[4][50];
+	
+	struct Aukce aukce;
 };
 #endif

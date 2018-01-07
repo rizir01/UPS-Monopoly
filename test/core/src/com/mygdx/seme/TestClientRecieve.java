@@ -29,6 +29,7 @@ public class TestClientRecieve extends Thread
 					break;
 				}
 				String message = (String)TestClient.bf.readLine();
+				System.out.println("cisty zaznam: " + message);
 				if(message == null)
 				{
 					System.out.println("Odpojily jsme se od serveru!");
@@ -50,7 +51,9 @@ public class TestClientRecieve extends Thread
 						//System.out.println("RC2 " + Arrays.toString(buffer));
 						//System.out.println("GET FROM SERVER before2 index: " + LoginScreen.indBuff);
 						buffer[LoginScreen.indBuff].notify();
+						//System.out.println("indBuff TCR before" + LoginScreen.indBuff);
 						LoginScreen.indBuff++;
+						//System.out.println("indBuff TCR after" + LoginScreen.indBuff);
 						//System.out.println("GET FROM SERVER after index: " + LoginScreen.indBuff);
 					}
 				}

@@ -304,7 +304,7 @@ int isEveryoneReady(int indexLobby)
 			p++;
 		}
 	}
-	if(p > 0 && p == lobbies[indexLobby].pocetHracu)
+	if(p > 1 && p == lobbies[indexLobby].pocetHracu)
 	{
 		return 1;
 	}
@@ -312,6 +312,38 @@ int isEveryoneReady(int indexLobby)
 	{
 		return 0;
 	}
+}
+
+int isEveryoneReadyLevel2(int indexLobby)
+{
+	int p = 0;
+	for(int i = 0; i < 4; i++)
+	{
+		if(lobbies[indexLobby].hraciReady[i] == 2)
+		{
+			p++;
+		}
+	}
+	if(p > 1 && p == lobbies[indexLobby].pocetHracu)
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+int isSomeoneReadyLevel2(int indexLobby)
+{
+	for(int i = 0; i < 4; i++)
+	{
+		if(lobbies[indexLobby].hraciReady[i] == 2)
+		{
+			return 1;
+		}
+	}
+	return 0;
 }
 
 int uvolniLobby()

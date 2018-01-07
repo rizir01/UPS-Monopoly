@@ -74,6 +74,10 @@ public class GameScreen implements Screen, InputProcessor
 	public static int folds;
 	public static int bid;
 	
+	//WAITING ROOM
+	public static boolean waiting = true;
+	public static int [] waited;
+	
 	
 	public static boolean pack = false;
 	public static ArrayList<String> gameInput = new ArrayList<String>();
@@ -100,8 +104,11 @@ public class GameScreen implements Screen, InputProcessor
 	@Override
 	public void show()
 	{
-		vlakno = new Table("Druhe");
-		vlakno.start();
+		//MOMENTALNE VYPNUTA SIMULACE SERVERU
+		//PRO TEST REALNEHO SERVERU
+		//vlakno = new Table("Druhe");
+		//vlakno.start();
+		Monopoly.LoginScreen.sendToThread("GUI", "$loaded!0#");
 		moneyDelay = new int[screenHraci.length];
 		lastThrow = new int[screenHraci.length][2];
 		for (int i = 0; i < lastThrow.length; i++)
@@ -133,45 +140,53 @@ public class GameScreen implements Screen, InputProcessor
 		{
 			statsDelay--;
 		}
-
-		//zpracovani inputu z druheho vlakna
-		recognizeInputAndUpdate();
 		
-		//Vykresleni policek
-		renderBoard(delta);
-		
-		//Vykresleni textu v polickach
-		renderTextBoard(delta);
-		
-		//Vykresleni pozice hracu a vlastnictvi pozemku
-		renderPlayerOnTable(delta);
-		
-		//Vykresleni informaci kazdeho hrace na prave
-		//strane herniho platna
-		renderPlayerStats(delta);
-		
-		//Vykresleni plneho zobrazeni informaci od danem
-		//poli uprostred platna hraci plochy vcetne vsech
-		//interakci s uzivatelem
-		if(chestChance)
+		//Cekani na vsechny hrace az budou ready
+		if(waiting)
 		{
-			renderChestChanceInfo(delta);
+			renderWaitingRoom(delta);
 		}
 		else
 		{
-			if(startRound)
+			//zpracovani inputu z druheho vlakna
+			recognizeInputAndUpdate();
+			
+			//Vykresleni policek
+			renderBoard(delta);
+			
+			//Vykresleni textu v polickach
+			renderTextBoard(delta);
+			
+			//Vykresleni pozice hracu a vlastnictvi pozemku
+			renderPlayerOnTable(delta);
+			
+			//Vykresleni informaci kazdeho hrace na prave
+			//strane herniho platna
+			renderPlayerStats(delta);
+			
+			//Vykresleni plneho zobrazeni informaci od danem
+			//poli uprostred platna hraci plochy vcetne vsech
+			//interakci s uzivatelem
+			if(chestChance)
 			{
-				renderStartTurn(delta);
-			}
-			else if(aukce)
-			{
-				renderAukceInfo(delta);
+				renderChestChanceInfo(delta);
 			}
 			else
 			{
-				renderFullInfo(delta);
-			}			
-		}
+				if(startRound)
+				{
+					renderStartTurn(delta);
+				}
+				else if(aukce)
+				{
+					renderAukceInfo(delta);
+				}
+				else
+				{
+					renderFullInfo(delta);
+				}			
+			}
+		}	
 	}
 	
 	public void renderBoard(float delta)
@@ -575,6 +590,45 @@ public class GameScreen implements Screen, InputProcessor
 		batch.end();
 	}
 	
+	public void renderWaitingRoom(float delta)
+	{
+		float widthInfo = width * info;
+		float playerDivides = widthInfo / waited.length;
+		float playerSpace = playerDivides * 0.6f;
+		float playerRect = playerDivides * 0.4f;
+		
+		float x,y;
+		sr.begin(ShapeType.Line);
+			x = playerSpace;
+			y = (height * 0.5f) - (playerRect * 0.5f);
+			for(int i = 0; i < waited.length; i++)
+			{
+				sr.setColor(Color.BLACK);
+				sr.rect(x, y, playerRect, playerRect);
+				x += playerRect + playerSpace;
+			}
+		sr.end();
+		font.getData().setScale(0.25f);
+		font.setColor(Color.BLACK);
+		batch.begin();
+			x = playerSpace;
+			y = (height * 0.5f) - (playerRect * 0.5f);
+			int j = 0;
+			for(int i = 0; i < waited.length; i++)
+			{
+				if(!Monopoly.LobbyScreen.currentLobby[i].equals("--empty--"))
+				{
+					font.draw(batch, Monopoly.LobbyScreen.currentLobby[i], x, y);
+					if(waited[j] == 1)
+					{
+						font.draw(batch, Monopoly.LobbyScreen.currentLobby[i], x, y + playerRect + 20);
+					}
+					x += playerRect + playerSpace;
+				}
+			}
+		batch.end();
+	}
+	
 	public void renderStartTurn(float delta)
 	{
 		float holeInside = boardWidth * insidePile;
@@ -602,7 +656,9 @@ public class GameScreen implements Screen, InputProcessor
 		{
 			if(isObjectTouched(touch, widthA + widthEdges + widthInfo * 0.5f - widthButton * 0.5f, widthA + widthEdges + widthInfo * 0.75f, widthButton, heightButton))
 			{
-				transmission("s");
+				//Tlacitko ze hazim kostkou
+				Monopoly.LoginScreen.sendToThread("GUI", "$game!roll#");
+				//transmission("s");
 				delaySet();
 				startRound = false;
 			}			
@@ -765,13 +821,17 @@ public class GameScreen implements Screen, InputProcessor
 				{
 					if(isObjectTouched(touch, widthA + widthEdges + widthInfoEdges, widthA + widthEdges + spaceInfoA + heightInfoA + 7, widthInfoA, heightButton))
 					{
-						transmission("k");
+						//Zprava, ze chci pozemek koupit
+						Monopoly.LoginScreen.sendToThread("GUI", "$game!buy#");
+						//transmission("k");
 						notClick = true;
 						delaySet();
 					}
 					else if(isObjectTouched(touch, widthA + widthEdges + 2 * widthInfoEdges + widthInfoA, widthA + widthEdges + spaceInfoA + heightInfoA + 7, widthInfoB, heightButton))
 					{
-						transmission("a");
+						//Zprava, ze chci o pozemek hrat v aukci
+						Monopoly.LoginScreen.sendToThread("GUI", "$game!auction#");
+						//transmission("a");
 						aukce = true;
 						aukcePozice = pozice;
 						bids = new int[screenHraci.length];
@@ -912,12 +972,16 @@ public class GameScreen implements Screen, InputProcessor
 				}
 				if(isObjectTouched(touch, widthA + widthEdges + 2 * widthInfoEdges + widthInfoA + 100, widthA + widthEdges + widthInfoEdges + heightInfoB + 50, widthButton, heightButton))
 				{
-					transmission(bid + "");
+					//Zprava, ze prihazuji na pozemek <bid>
+					Monopoly.LoginScreen.sendToThread("GUI", "$aukce!add!" + bid + "#");
+					//transmission(bid + "");
 					notClick = true;
 					delaySet();
 				}
 				else if(isObjectTouched(touch, widthA + widthEdges + 2 * widthInfoEdges + widthInfoA + 100, widthA + widthEdges + widthInfoEdges + heightInfoB + 50 + heightButton + 7, widthButton, heightButton))
 				{
+					//Zprava, ze ukoncuji ucast na aukci
+					Monopoly.LoginScreen.sendToThread("GUI", "$aukce!end!0#");
 					transmission("k");
 					notClick = true;
 					delaySet();
@@ -1107,6 +1171,9 @@ public class GameScreen implements Screen, InputProcessor
 				break;
 		case 'n':startRound = true;
 			     break;
+		case 'j':screenHraci[pozice].jail = true;
+				 screenHraci[pozice].setPosition(10);
+				 break;
 		case 'e':pozice++;
 				 if(pozice >= screenHraci.length)
 				 {

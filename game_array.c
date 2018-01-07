@@ -44,6 +44,9 @@ struct Game* boostGames()
 			strcpy(moreGames[i].jmena[j], list_games[i].jmena[j]);
 			strcpy(moreGames[i].budovy[j], list_games[i].budovy[j]);
 			strcpy(moreGames[i].upgrady[j], list_games[i].upgrady[j]);
+			
+			//aukce
+			moreGames[i].aukce.auctionPrice[j] = list_games[i].aukce.auctionPrice[j];
 		}		
 		//promene
 		moreGames[i].idLobby = list_games[i].idLobby;
@@ -52,6 +55,17 @@ struct Game* boostGames()
 		moreGames[i].anotherRun = list_games[i].anotherRun;
 		moreGames[i].changeOfPlayers = list_games[i].changeOfPlayers;
 		moreGames[i].jailFree = list_games[i].jailFree;
+		moreGames[i].poslHod[0] = list_games[i].poslHod[0];
+		moreGames[i].poslHod[1] = list_games[i].poslHod[1];
+		
+		//aukce
+		moreGames[i].aukce.auction = list_games[i].aukce.auction;
+		moreGames[i].aukce.aukceNatahu = list_games[i].aukce.aukceNatahu;
+		moreGames[i].aukce.max = list_games[i].aukce.max;
+		moreGames[i].aukce.peopleDone = list_games[i].aukce.peopleDone;
+		moreGames[i].aukce.pocetHrajicich = list_games[i].aukce.pocetHrajicich;
+		moreGames[i].aukce.pozice = list_games[i].aukce.pozice;
+		
 	}
 	
 	free(list_games);
@@ -75,12 +89,16 @@ struct Game* reduceGames(int index)
 			memcpy(lessGames[i].vezeni, list_games[i].vezeni, sizeof(list_games[i].vezeni));
 			memcpy(lessGames[i].chestIndex, list_games[i].chestIndex, sizeof(list_games[i].chestIndex));
 			memcpy(lessGames[i].chanceIndex, list_games[i].chanceIndex, sizeof(list_games[i].chanceIndex));
+			
 			//retezce
 			for(int m = 0; m < 4; m++)
 			{
 				strcpy(lessGames[i].jmena[m], list_games[i].jmena[m]);
 				strcpy(lessGames[i].budovy[m], list_games[i].budovy[m]);
 				strcpy(lessGames[i].upgrady[m], list_games[i].upgrady[m]);
+				
+				//Aukce
+				lessGames[i].aukce.auctionPrice[m] = list_games[i].aukce.auctionPrice[m];
 			}		
 			//promene
 			lessGames[i].idLobby = list_games[i].idLobby;
@@ -89,6 +107,16 @@ struct Game* reduceGames(int index)
 			lessGames[i].anotherRun = list_games[i].anotherRun;
 			lessGames[i].changeOfPlayers = list_games[i].changeOfPlayers;
 			lessGames[i].jailFree = list_games[i].jailFree;
+			lessGames[i].poslHod[0] = list_games[i].poslHod[0];
+			lessGames[i].poslHod[1] = list_games[i].poslHod[1];
+			
+			//aukce
+			lessGames[i].aukce.auction = list_games[i].aukce.auction;
+			lessGames[i].aukce.aukceNatahu = list_games[i].aukce.aukceNatahu;
+			lessGames[i].aukce.max = list_games[i].aukce.max;
+			lessGames[i].aukce.peopleDone = list_games[i].aukce.peopleDone;
+			lessGames[i].aukce.pocetHrajicich = list_games[i].aukce.pocetHrajicich;
+			lessGames[i].aukce.pozice = list_games[i].aukce.pozice;
 			j++;	
 		}
 	}
@@ -100,17 +128,17 @@ struct Game* reduceGames(int index)
 
 int addGame(int idLob)
 {
+	pthread_mutex_lock(&lockGame);
 	for(int i = 0; i < length_list_games; i++)
 	{
 		if(list_games[i].idLobby == idLob)
 		{
+			pthread_mutex_unlock(&lockGame);
 			printf("Prdani nove hry nelze provest, jelikoz hra s id lobby %d jiz existuje!\n", idLob);
 			return -1;
 		}
 	}
 	int index = length_list_games;
-	
-	pthread_mutex_lock(&lockGame);
 	
 	list_games = boostGames();
 	list_games[index].idLobby = idLob;
@@ -121,12 +149,13 @@ int addGame(int idLob)
 
 int removeGame(int index)
 {
+	pthread_mutex_lock(&lockGame);
 	if(index < 0 || index >= length_list_games)
 	{
+		pthread_mutex_unlock(&lockGame);
 		printf("Zadany index %d je mimo ramec seznamu her!\n", index);
 		return 1;
 	}
-	pthread_mutex_lock(&lockGame);
 	
 	list_games = reduceGames(index);
 	
@@ -136,13 +165,16 @@ int removeGame(int index)
 
 int getIndexOfGame(int idLob)
 {
+	pthread_mutex_lock(&lockGame);
 	for(int i = 0; i < length_list_games; i++)
 	{
 		if(list_games[i].idLobby = idLob)
 		{
+			pthread_mutex_unlock(&lockGame);
 			return i;
 		}
 	}
+	pthread_mutex_unlock(&lockGame);
 	return -1;
 }
 

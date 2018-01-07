@@ -146,6 +146,11 @@ public class Lobby
 		pocetHracu = hraci;
 	}
 	
+	public String [] getHraci()
+	{
+		return hraci;
+	}
+	
 	public boolean[] getReady()
 	{
 		return ready;

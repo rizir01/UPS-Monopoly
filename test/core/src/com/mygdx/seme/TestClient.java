@@ -9,6 +9,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.Scanner;
 
 public class TestClient extends Thread
@@ -16,6 +17,9 @@ public class TestClient extends Thread
 	/**
 	 * Definuje, v jakem stavu se hrac nachazi,
 	 * tedy jestli je v lobby, ve hre atd.
+	 * 2 - lobby
+	 * 3 - hra
+	 * 
 	 */
 	int stavHrace = 1;
 	
@@ -34,18 +38,47 @@ public class TestClient extends Thread
 		this.buffer = buffer;
 	}
 	
-	public synchronized String [] getData()
+	public synchronized String [][] getData()
 	{
 		//System.out.println("READING in index: " + LoginScreen.indBuff);
+		int vel = LoginScreen.indBuff;
+		String [][] vys = new String[vel][2];
+		//System.out.println("TC before 1 " + Arrays.toString(buffer));	
+		for(int i = 0; i < vys.length; i++)
+		{
+			vys[i][0] = buffer[i].getMessageType();
+			vys[i][1] = buffer[i].getMessageData();
+		}
+		//System.out.println("TC before 2 " + Arrays.toString(buffer));
+		int j = vel;//Na pozici, kde nic jeste neni(tam kde jsem nic nesebral)
+		for (int i = 0; i < buffer.length - vel; i++)
+		{
+			buffer[i].setAll(buffer[j++].getAll());			
+		}
+		//System.out.println("TC after"+ Arrays.toString(buffer));
+		for(int i = 0; i < vys.length; i++)
+		{
+			System.out.println(Arrays.toString(vys[i]));
+		}
+		//System.out.println("indBuff TestClient before" + LoginScreen.indBuff);
+		LoginScreen.indBuff -= vel;//--
+		//System.out.println("indBuff TestClient after" + LoginScreen.indBuff);
+		return vys;
+		
+		/*
 		String [] vys = buffer[0].getAll();
-		//System.out.println("TC " + Arrays.toString(buffer));
+		System.out.println("TC before" + Arrays.toString(buffer));
 		for (int i = 0; i < buffer.length - 1; i++)
 		{
 			buffer[i].setAll(buffer[i+1].getAll());			
 		}
-		//System.out.println("TC "+ Arrays.toString(buffer));
+		System.out.println("TC after"+ Arrays.toString(buffer));
+		System.out.println(Arrays.toString(vys));
+		System.out.println("indBuff TestClient before" + LoginScreen.indBuff);
 		LoginScreen.indBuff--;
+		System.out.println("indBuff TestClient after" + LoginScreen.indBuff);
 		return vys;
+		 */
 	}
 	
 	public void lobbyState()
@@ -54,33 +87,53 @@ public class TestClient extends Thread
 		{
 			try
 			{
-				String [] message = new String[2];
+				String [][] message;
 				synchronized(buffer[LoginScreen.indBuff])
 				{
 					buffer[LoginScreen.indBuff].wait();
 					message = getData();
 				}
 				String send = "";
-				switch(stavHrace)
+				for (int i = 0; i < message.length; i++)
 				{
-				case 2:if(message[0].equals("GUI"))
-					   {
-						   send = message[1];
-						   bw.write(send.getBytes());
-						   System.out.println("GUI---"+ message[1] + "---");
-					   }
-					   else if(message[0].equals("SERVER"))
-					   {
-						   System.out.println("SERVER---"+ message[1] + "---");
-						   defineSituationLobbyServer(message[1]);
-					   }
-					   else
-					   {
-						   System.out.println("Chyba parametry pro rozliseni prijmuti a poslani zpravy!");
-					   }
-					   break;
-				default:System.out.println("Chyba, stav hrace spatne definovany!");
-				        break;
+					System.out.println("extr. zp. : " + Arrays.toString(message[i]) + " ve stavu " + stavHrace);
+					switch(stavHrace)
+					{
+					case 2:if(message[i][0].equals("GUI"))
+					{
+						send = message[i][1];
+						bw.write(send.getBytes());
+						System.out.println("GUI---"+ message[i][1] + "---");
+					}
+					else if(message[i][0].equals("SERVER"))
+					{
+						System.out.println("SERVER---"+ message[i][1] + "---");
+						defineSituationLobbyServer(message[i][1]);
+					}
+					else
+					{
+						System.out.println("Chyba parametry pro rozliseni prijmuti a poslani zpravy!(Stav 2 hrace - Lobby)");
+					}
+					break;
+					case 3:if(message[i][0].equals("GUI"))
+					{
+						send = message[i][1];
+						bw.write(send.getBytes());
+						System.out.println("GUI---"+ message[i][1] + "---");
+					}
+					else if(message[i][0].equals("SERVER"))
+					{
+						System.out.println("SERVER---"+ message[i][1] + "---");
+						defineSituationGame(message[i][1]);
+					}
+					else
+					{
+						System.out.println("Chyba parametry pro rozliseni prijmuti a poslani zpravy(Stav 3 hrace - Hra)!");
+					}
+					break;
+					default:System.out.println("Chyba, stav hrace spatne definovany!");
+					break;
+					}
 				}
 			}
 			catch(SocketException se)
@@ -271,6 +324,9 @@ public class TestClient extends Thread
 				//Nastavit casomiru
 				LobbyScreen.countDown = true;
 				LobbyScreen.timeC = System.currentTimeMillis();
+				int pocH = LobbyScreen.lobbies[LobbyScreen.selectedLobby].getPocetHrau();
+				//System.out.println("pocet hracu v lobby: " + pocH);
+				GameScreen.waited = new int[pocH];
 			}
 			else if(input[0].equals("stop"))
 			{
@@ -285,10 +341,205 @@ public class TestClient extends Thread
 			}
 			return 0;
 		}
+		else if(front.equals("pre"))
+		{
+			String [] info = Assets.separeter(back, '|');
+			String [] info2 = Assets.separeter(back, '!');
+			if(info2[0].equals("add"))
+			{
+				try
+				{
+					int poz = Integer.parseInt(info2[1]);
+					if(poz >= GameScreen.waited.length)
+					{
+						System.out.println("Zadany index je spatne zadany, moc velky pro waiting room!");
+						return 1;
+					}
+					GameScreen.waited[poz] = 1;
+				}
+				catch(NumberFormatException nfe)
+				{
+					System.out.println("Zprava mela spatne zadany parameteru indexu pro\n"
+							+ "nastaveni ve waiting room " + info[1]);
+					return 1;
+				}
+			}
+			else
+			{
+				System.out.println("Error - predana zprava neobsahuje zadny z parametru, ktere by\n"
+						+ "program znal " + instrukce);
+				return 1;
+			}
+			return 0;
+		}
 		else
 		{
-			System.out.println("Neznama zprava " + instrukce + "!");
+			System.out.println("Neznama zprava " + instrukce);
 			return 0;
+		}
+	}
+	
+	public int defineSituationGame(String instrukce)
+	{
+		int indV = instrukce.indexOf('!');
+		if(indV == -1)//neni vykricnik ve zprava
+		{
+			System.out.println("Prijmuta zprava neobsahuje parsovaci znak '!'");
+			return 1;
+		}
+		String front = instrukce.substring(0, indV);
+		String back = instrukce.substring(indV + 1);
+		
+		if(front.equals("game"))
+		{
+			String [] info = Assets.separeter(back, '!');
+			if(info.length == 0)
+			{
+				System.out.println("Prijmuta zprava v oblasti informaci neobsahuje parsovaci znak '!'");
+				return 1;
+			}
+			
+			if(info[0].equals("start"))
+			{
+				String [] pom = Assets.separeter(info[1], ',');
+				Table.transmission("s!" + pom[0] + "!" + pom[1] + "!");
+			}
+			else if(info[0].equals("end"))
+			{
+				Table.transmission("e!");
+			}
+			else if(info[0].equals("again"))
+			{
+				Table.transmission("n!");
+			}
+			else if(info[0].equals("aukce"))
+			{
+				System.out.println(Arrays.toString(info));
+				if(info.length <= 1)
+				{
+					System.out.println("Prijmuta zprava v oblasti informaci neobsahuje parsovaci znak '!'" + info[1]);
+					return 1;
+				}
+				
+				if(info[1].equals("done"))
+				{
+					Table.transmission("a!k!");
+				}
+				else if(info[1].equals("fail"))
+				{
+					Table.transmission("a!f!");
+				}
+				else if(info[1].equals("max"))
+				{
+					Table.transmission("a!a!" + info[2] + "!");
+				}
+				else if(info[1].equals("next"))
+				{
+					Table.transmission("a!n!");
+				}
+				else if(info[1].equals("start"))
+				{
+					try
+					{
+						int poz1 = Integer.parseInt(info[2]);
+						GameScreen.startRound = false;//!!
+						GameScreen.aukce = true;
+						GameScreen.aukcePozice = GameScreen.pozice;
+						GameScreen.bids = new int[GameScreen.screenHraci.length];
+						GameScreen.folds = 0;
+						GameScreen.aukceMax = 0;
+						GameScreen.bid = GameScreen.aukceMax;
+					}
+					catch(NumberFormatException nfe)
+					{
+						System.out.println("Error-ve zprave neni cislo u pozici aukce!");
+						return 1;
+					}
+				}
+				else
+				{
+					System.out.println("Error - predana zprava neobsahuje zadny z parametru, ktere by\n"
+							+ "program znal " + instrukce);
+					return 1;
+				}
+				
+			}
+			else if(info[0].equals("get"))
+			{
+				Table.transmission("g!" + info[1] + "!" + info[2] + "!");
+			}
+			else if(info[0].equals("pay"))
+			{
+				Table.transmission("p!" + info[1] + "!" + info[2] + "!");
+			}
+			else if(info[0].equals("buy"))
+			{
+				Table.transmission("b!" + info[1] + "!" + info[2] + "!");
+			}
+			else if(info[0].equals("chest"))
+			{
+				Table.transmission("d!" + info[1]);
+			}
+			else if(info[0].equals("chance"))
+			{
+				Table.transmission("c!" + info[1]);
+			}
+			else if(info[0].equals("goJail"))
+			{
+				Table.transmission("j!");
+			}
+			else if(info[0].equals("lose"))
+			{
+				Table.transmission("l!"+ info[1] + "!");
+			}
+			else
+			{
+				System.out.println("Error - predana zprava neobsahuje zadny z parametru, ktere by\n"
+						+ "program znal " + instrukce);
+				return 1;
+			}
+			return 0;
+		}
+		else if(front.equals("pre"))
+		{
+			String [] info = Assets.separeter(back, '|');
+			String [] info2 = Assets.separeter(back, '!');
+			if(info2[0].equals("add"))
+			{
+				try
+				{
+					int poz = Integer.parseInt(info2[1]);
+					if(poz >= GameScreen.waited.length)
+					{
+						System.out.println("Zadany index je spatne zadany, moc velky pro waiting room!");
+						return 1;
+					}
+					GameScreen.waited[poz] = 1;
+				}
+				catch(NumberFormatException nfe)
+				{
+					System.out.println("Zprava mela spatne zadany parameteru indexu pro\n"
+							+ "nastaveni ve waiting room " + info[1] + "!");
+					return 1;
+				}
+			}
+			else if(info[0].equals("start"))
+			{
+				Assets.setGameStatusFull(info[1]);
+				GameScreen.waiting = false;
+			}
+			else
+			{
+				System.out.println("Error - predana zprava neobsahuje zadny z parametru, ktere by\n"
+						+ "program znal " + instrukce);
+				return 1;
+			}
+			return 0;
+		}
+		else
+		{
+			System.out.println("Neznama zprava |" + instrukce + "|!");
+			return 1;
 		}
 	}
 	

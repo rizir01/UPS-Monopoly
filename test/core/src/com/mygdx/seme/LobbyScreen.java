@@ -89,8 +89,10 @@ public class LobbyScreen implements Screen, InputProcessor
 		{
 			if(System.currentTimeMillis() - timeC >= 15000)
 			{
-				Monopoly.LoginScreen.sendToThread("GUI", "$game!done!#");
+				//Monopoly.LoginScreen.sendToThread("GUI", "$game!done!#");
 				//System.out.println("Posilam zpravu o tom, ze jdu do hry");
+				Monopoly.LoginScreen.tc.stavHrace = 3;
+				game.setScreen(Monopoly.GameScreen);
 				countDown = false;
 			}
 		}
@@ -104,6 +106,8 @@ public class LobbyScreen implements Screen, InputProcessor
 		Gdx.gl.glClear(GL30.GL_COLOR_BUFFER_BIT);
 		camera.update();
 		
+		//Zpracovani vsech delay promennych plus
+		//Countdown zalezitosti pro presmerovani do hry
 		processDelays();
 		
 		//vykresleni vsech moznych komponent
@@ -142,7 +146,7 @@ public class LobbyScreen implements Screen, InputProcessor
 			drawButton(730, height - 105, 200, 75, "READY");
 			if(countDown)
 			{
-				drawText(500, 50, "" + (int)(15 -(System.currentTimeMillis() - timeC) * 0.001), Color.BLUE);
+				drawText(580, 85, "" + (int)(15 -(System.currentTimeMillis() - timeC) * 0.001), Color.BLUE);
 			}
 		}
 		else

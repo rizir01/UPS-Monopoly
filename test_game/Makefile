@@ -2,9 +2,9 @@ CC=gcc
 
 all:	clean server
 
-server: game_methods.c
-	${CC} -o game game_methods.c
+server: test_substring.c
+	${CC} -o test test_substring.c
 
 clean: 
-	rm -f game
+	rm -f test
 

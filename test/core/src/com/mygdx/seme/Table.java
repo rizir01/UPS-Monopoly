@@ -81,11 +81,11 @@ public class Table extends Thread
 				}
 				recognizeInput();
 				System.out.println("Hod kostkou[1]:");
-				int kostka1 = Assets.rand.nextInt(5) + 1;
-				//int kostka1 = Assets.sc.nextInt();
-				int kostka2 = Assets.rand.nextInt(5) + 1;
+				//int kostka1 = Assets.rand.nextInt(5) + 1;
+				int kostka1 = Assets.sc.nextInt();
+				//int kostka2 = Assets.rand.nextInt(5) + 1;
 				System.out.println("Hod kostkou[2]:");
-				//int kostka2 = Assets.sc.nextInt();
+				int kostka2 = Assets.sc.nextInt();
 				int hod = kostka1 + kostka2;
 				System.out.println(hraci[index].getName() + " hodil " + kostka1 + " " + kostka2);
 					//TRANSMISSION!!!
