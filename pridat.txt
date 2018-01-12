@@ -1,0 +1,1 @@
+Ve skole, se musi do make nakonec gcc kompilu pridat -std=c11

@@ -20,7 +20,7 @@ struct Zprava getMessage(int client_socket)//Monza pridelat stav erroru ($asda#a
 	char pole[1000];
 	int indexP = 0;
 	int delka = 0;
-	memset(&pole, '0', sizeof(pole));
+	memset(&pole, '\0', sizeof(pole));
 	do
 	{
 		char z;
@@ -53,8 +53,15 @@ struct Zprava getMessage(int client_socket)//Monza pridelat stav erroru ($asda#a
 	}while(return_value > 0);
 	if(kon == 0 && zac == 0)
 	{
-		printf("Zprava: |%s|\n", pole);
-		printf("Spatny format zpravy (zprava neni mezi $ a #)!\n");
+		if(pole[0] != '0')
+		{
+			printf("Zprava: |%s|\n", pole);	
+		}
+		else
+		{
+			printf("Zprava: |same nuly|\n");
+		}
+		printf("zm: Spatny format zpravy (zprava neni mezi $ a #)!\n");
 		p.error = 2;
 		return p;
 	}
@@ -68,7 +75,7 @@ struct Zprava getMessage(int client_socket)//Monza pridelat stav erroru ($asda#a
 	if(delka == 0)
 	{
 		printf("Zprava: |%s|\n", pole);
-		printf("Spatny format zpravy (Zadna zprava)!\n");
+		printf("Spatny format zpravy (Predana zprava neobsahuje zadna data)!\n");
 		p.error = 4;
 		return p;
 	}

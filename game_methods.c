@@ -437,6 +437,7 @@ void makeActionJail(int index, int indexHrace, int pozice, struct Game* hra)
 		printf("%s se dostal z vezeni a haze koustkou.\n", hraci[indexHrace].jmeno);
 		hra->jailFree = -1;
 		hra->anotherRun = 1;
+		hra->vezeni[index] = 0;
 	}
 	else if(hra->vezeni[index] == 1)
 	{
@@ -452,6 +453,13 @@ void makeActionJail(int index, int indexHrace, int pozice, struct Game* hra)
 		}
 		else
 		{
+			hra->vezeniLuck[index] += 1;
+			if(hra->vezeniLuck[index] == 5)
+			{
+				hra->vezeni[index] = 0;
+				printf("%s se dostal z vezeni na milost.\n", hraci[indexHrace].jmeno);
+				hra->anotherRun = 1;
+			}
 			printf("%s je stale ve vezeni.\n", hraci[indexHrace].jmeno);
 		}
 	}
@@ -676,6 +684,7 @@ void makeActionPRUAuction(int index, int indexHrace, int typOdpovedi, int castka
 			memset(&t, '\0', sizeof(t));
 			strcpy(t, "$game!aukce!fail!#\n");
 			broadcastToAllGame(hra, t);
+			return;
 			//TRANSMISSION!!!
 			//Table.transmission("a!f!");
 			//TRANSMISSION!!!
@@ -688,6 +697,7 @@ void makeActionPRUAuction(int index, int indexHrace, int typOdpovedi, int castka
 				memset(&t, '\0', sizeof(t));
 				strcpy(t, "$game!aukce!fail!#\n");
 				broadcastToAllGame(hra, t);
+				return;
 				//TRANSMISSION!!!
 				//.transmission("a!f!");
 				//TRANSMISSION!!!
@@ -733,17 +743,21 @@ void makeActionPRUAuction(int index, int indexHrace, int typOdpovedi, int castka
 		{
 			if(hra->aukce.auctionPrice[hra->aukce.aukceNatahu] == -1)
 			{
+				if(hra->penize[hra->aukce.aukceNatahu] > 0)
+				{
+					//Poslat ze ma skocit na dalsiho hrace
+					memset(&t, '\0', sizeof(t));
+					strcpy(t, "$game!aukce!next!#\n");
+					broadcastToAllGame(hra, t);
+					//TRANSMISSION!!!
+					//Table.transmission("a!n!");
+					//TRANSMISSION!!!
+				}
 				hra->aukce.aukceNatahu++;
 				if(hra->aukce.aukceNatahu == 4)
 				{
 					hra->aukce.aukceNatahu = 0;
 				}
-				memset(&t, '\0', sizeof(t));
-				strcpy(t, "$game!aukce!next!#\n");
-				broadcastToAllGame(hra, t);
-				//TRANSMISSION!!!
-				//Table.transmission("a!n!");
-				//TRANSMISSION!!!
 			}
 			else
 			{
@@ -768,6 +782,9 @@ void makeActionPRUAuction(int index, int indexHrace, int typOdpovedi, int castka
 		hra->penize[index3] -= hra->aukce.auctionPrice[index3];
 		sprintf(hra->budovy[index3], "%s%d,", hra->budovy[index3], hra->aukce.pozice);
 		sprintf(hra->upgrady[index3], "%s0,", hra->upgrady[index3]);
+		memset(&t, '\0', sizeof(t));
+		sprintf(t, "$game!aukce!end!#\n");
+		broadcastToAllGame(hra, t);
 		memset(&t, '\0', sizeof(t));
 		sprintf(t, "$game!pay!%d!%d!#\n", index3, hra->aukce.auctionPrice[index3]);
 		broadcastToAllGame(hra, t);
@@ -804,7 +821,7 @@ int makeActionPRU(int index, int indexHrace, int pozice, struct Game* hra)
 	if(isPRUOwned(pozice, hra) == -1)
 	{
 		//Posilam klientovi
-		printf("%s %s stoji 200.\n", nazevPoz, game_board[pozice].nazev);
+		printf("%s %s stoji %d.\n", nazevPoz, game_board[pozice].nazev, game_board[pozice].cena);
 		printf("<k> - Koupit utility!\n");
 		printf("<a> - Aukcni sin!\n");
 		int done = 1;

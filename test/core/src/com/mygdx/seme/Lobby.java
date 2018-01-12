@@ -138,6 +138,20 @@ public class Lobby
 	
 	public int getPocetHrau()
 	{
+		int vys = 0;
+		for(int i = 0; i < hraci.length; i++)
+		{
+			if(hraci[i] != null)
+			{
+				vys++;
+			}
+		}
+		pocetHracu = vys;//!!
+		return vys;
+	}
+	
+	public int getPocetHracuRefresh()
+	{
 		return pocetHracu;
 	}
 	

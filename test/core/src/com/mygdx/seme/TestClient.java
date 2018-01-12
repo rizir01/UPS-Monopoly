@@ -23,6 +23,8 @@ public class TestClient extends Thread
 	 */
 	int stavHrace = 1;
 	
+	TestClientRecieve tcr;
+	
 	Message [] buffer;
 	
 	static Socket socket;
@@ -33,52 +35,21 @@ public class TestClient extends Thread
 	
 	static Scanner sc = new Scanner(System.in);
 	
-	public TestClient(Message [] buffer)
+	public TestClient(TestClientRecieve tcr)
 	{
-		this.buffer = buffer;
+		this.tcr = tcr;
 	}
 	
-	public synchronized String [][] getData()
+	public synchronized void sendMessageToServer(String mess)
 	{
-		//System.out.println("READING in index: " + LoginScreen.indBuff);
-		int vel = LoginScreen.indBuff;
-		String [][] vys = new String[vel][2];
-		//System.out.println("TC before 1 " + Arrays.toString(buffer));	
-		for(int i = 0; i < vys.length; i++)
+		try
 		{
-			vys[i][0] = buffer[i].getMessageType();
-			vys[i][1] = buffer[i].getMessageData();
-		}
-		//System.out.println("TC before 2 " + Arrays.toString(buffer));
-		int j = vel;//Na pozici, kde nic jeste neni(tam kde jsem nic nesebral)
-		for (int i = 0; i < buffer.length - vel; i++)
+			System.out.println("Posilam zpravu SERVERU: " + mess);
+			bw.write(mess.getBytes());
+		}catch (IOException e)
 		{
-			buffer[i].setAll(buffer[j++].getAll());			
+			e.printStackTrace();
 		}
-		//System.out.println("TC after"+ Arrays.toString(buffer));
-		for(int i = 0; i < vys.length; i++)
-		{
-			System.out.println(Arrays.toString(vys[i]));
-		}
-		//System.out.println("indBuff TestClient before" + LoginScreen.indBuff);
-		LoginScreen.indBuff -= vel;//--
-		//System.out.println("indBuff TestClient after" + LoginScreen.indBuff);
-		return vys;
-		
-		/*
-		String [] vys = buffer[0].getAll();
-		System.out.println("TC before" + Arrays.toString(buffer));
-		for (int i = 0; i < buffer.length - 1; i++)
-		{
-			buffer[i].setAll(buffer[i+1].getAll());			
-		}
-		System.out.println("TC after"+ Arrays.toString(buffer));
-		System.out.println(Arrays.toString(vys));
-		System.out.println("indBuff TestClient before" + LoginScreen.indBuff);
-		LoginScreen.indBuff--;
-		System.out.println("indBuff TestClient after" + LoginScreen.indBuff);
-		return vys;
-		 */
 	}
 	
 	public void lobbyState()
@@ -87,53 +58,48 @@ public class TestClient extends Thread
 		{
 			try
 			{
-				String [][] message;
-				synchronized(buffer[LoginScreen.indBuff])
-				{
-					buffer[LoginScreen.indBuff].wait();
-					message = getData();
-				}
+				String message = tcr.getMessage();
 				String send = "";
-				for (int i = 0; i < message.length; i++)
+				
+				System.out.println("extr. zp. : " + message + " ve stavu " + stavHrace);
+				switch(stavHrace)
 				{
-					System.out.println("extr. zp. : " + Arrays.toString(message[i]) + " ve stavu " + stavHrace);
-					switch(stavHrace)
-					{
-					case 2:if(message[i][0].equals("GUI"))
-					{
-						send = message[i][1];
-						bw.write(send.getBytes());
-						System.out.println("GUI---"+ message[i][1] + "---");
-					}
-					else if(message[i][0].equals("SERVER"))
-					{
-						System.out.println("SERVER---"+ message[i][1] + "---");
-						defineSituationLobbyServer(message[i][1]);
-					}
-					else
-					{
-						System.out.println("Chyba parametry pro rozliseni prijmuti a poslani zpravy!(Stav 2 hrace - Lobby)");
-					}
-					break;
-					case 3:if(message[i][0].equals("GUI"))
-					{
-						send = message[i][1];
-						bw.write(send.getBytes());
-						System.out.println("GUI---"+ message[i][1] + "---");
-					}
-					else if(message[i][0].equals("SERVER"))
-					{
-						System.out.println("SERVER---"+ message[i][1] + "---");
-						defineSituationGame(message[i][1]);
-					}
-					else
-					{
-						System.out.println("Chyba parametry pro rozliseni prijmuti a poslani zpravy(Stav 3 hrace - Hra)!");
-					}
-					break;
-					default:System.out.println("Chyba, stav hrace spatne definovany!");
-					break;
-					}
+				case 2:if(message.charAt(0) == 'G')
+						{
+							send = message.substring(2);
+							bw.write(send.getBytes());
+							System.out.println("GUI---"+ send + "---");
+						}
+						else if(message.charAt(0) == 'S')
+						{
+							String internal = message.substring(2);
+							System.out.println("SERVER---"+ internal + "---");
+							defineSituationLobbyServer(internal);
+						}
+						else
+						{
+							System.out.println("Chyba parametry pro rozliseni prijmuti a poslani zpravy!(Stav 2 hrace - Lobby)");
+						}
+						break;
+				case 3:if(message.charAt(0) == 'G')
+						{
+							send = message.substring(2);
+							bw.write(send.getBytes());
+							System.out.println("GUI---"+ send + "---");
+						}
+						else if(message.charAt(0) == 'S')
+						{
+							String internal = message.substring(2);
+							System.out.println("SERVER---"+ internal + "---");
+							defineSituationGame(internal);
+						}
+						else
+						{
+							System.out.println("Chyba parametry pro rozliseni prijmuti a poslani zpravy(Stav 3 hrace - Hra)!");
+						}
+						break;
+				default:System.out.println("Chyba, stav hrace spatne definovany!");
+						break;
 				}
 			}
 			catch(SocketException se)
@@ -325,6 +291,7 @@ public class TestClient extends Thread
 				LobbyScreen.countDown = true;
 				LobbyScreen.timeC = System.currentTimeMillis();
 				int pocH = LobbyScreen.lobbies[LobbyScreen.selectedLobby].getPocetHrau();
+				System.out.println("Vytvarim waiting lobby s poctem hracu: " + pocH);
 				//System.out.println("pocet hracu v lobby: " + pocH);
 				GameScreen.waited = new int[pocH];
 			}
@@ -402,6 +369,7 @@ public class TestClient extends Thread
 			if(info[0].equals("start"))
 			{
 				String [] pom = Assets.separeter(info[1], ',');
+				GameScreen.startRound = false;
 				Table.transmission("s!" + pom[0] + "!" + pom[1] + "!");
 			}
 			else if(info[0].equals("end"))
@@ -436,6 +404,10 @@ public class TestClient extends Thread
 				else if(info[1].equals("next"))
 				{
 					Table.transmission("a!n!");
+				}
+				else if(info[1].equals("end"))
+				{
+					Table.transmission("a!e!");
 				}
 				else if(info[1].equals("start"))
 				{
@@ -474,7 +446,14 @@ public class TestClient extends Thread
 			}
 			else if(info[0].equals("buy"))
 			{
-				Table.transmission("b!" + info[1] + "!" + info[2] + "!");
+				if(info[1].equals("fail"))
+				{
+					System.out.println("Nedostatek penez na ucte, vyberte moznost AUKCE!");
+				}
+				else
+				{
+					Table.transmission("b!" + info[1] + "!" + info[2] + "!");	
+				}
 			}
 			else if(info[0].equals("chest"))
 			{
@@ -484,7 +463,7 @@ public class TestClient extends Thread
 			{
 				Table.transmission("c!" + info[1]);
 			}
-			else if(info[0].equals("goJail"))
+			else if(info[0].equals("gojail"))
 			{
 				Table.transmission("j!");
 			}
@@ -662,4 +641,49 @@ public class TestClient extends Thread
 		}
 		System.out.println("EXIT");
 	}
+	
+	/**
+	public synchronized String [][] getData()
+	{
+		//System.out.println("READING in index: " + LoginScreen.indBuff);
+		int vel = LoginScreen.indBuff;
+		String [][] vys = new String[vel][2];
+		//System.out.println("TC before 1 " + Arrays.toString(buffer));	
+		for(int i = 0; i < vys.length; i++)
+		{
+			vys[i][0] = buffer[i].getMessageType();
+			vys[i][1] = buffer[i].getMessageData();
+		}
+		//System.out.println("TC before 2 " + Arrays.toString(buffer));
+		int j = vel;//Na pozici, kde nic jeste neni(tam kde jsem nic nesebral)
+		for (int i = 0; i < buffer.length - vel; i++)
+		{
+			buffer[i].setAll(buffer[j++].getAll());			
+		}
+		//System.out.println("TC after"+ Arrays.toString(buffer));
+		for(int i = 0; i < vys.length; i++)
+		{
+			System.out.println(Arrays.toString(vys[i]));
+		}
+		//System.out.println("indBuff TestClient before" + LoginScreen.indBuff);
+		LoginScreen.indBuff -= vel;//--
+		//System.out.println("indBuff TestClient after" + LoginScreen.indBuff);
+		return vys;
+		
+		/*
+		String [] vys = buffer[0].getAll();
+		System.out.println("TC before" + Arrays.toString(buffer));
+		for (int i = 0; i < buffer.length - 1; i++)
+		{
+			buffer[i].setAll(buffer[i+1].getAll());			
+		}
+		System.out.println("TC after"+ Arrays.toString(buffer));
+		System.out.println(Arrays.toString(vys));
+		System.out.println("indBuff TestClient before" + LoginScreen.indBuff);
+		LoginScreen.indBuff--;
+		System.out.println("indBuff TestClient after" + LoginScreen.indBuff);
+		return vys;
+		
+	}
+	 */
 }

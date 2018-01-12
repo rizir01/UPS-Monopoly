@@ -38,6 +38,8 @@ struct Game* boostGames()
 		memcpy(moreGames[i].vezeni, list_games[i].vezeni, sizeof(list_games[i].vezeni));
 		memcpy(moreGames[i].chestIndex, list_games[i].chestIndex, sizeof(list_games[i].chestIndex));
 		memcpy(moreGames[i].chanceIndex, list_games[i].chanceIndex, sizeof(list_games[i].chanceIndex));
+		memcpy(moreGames[i].vezeniLuck, list_games[i].vezeniLuck, sizeof(list_games[i].vezeniLuck));
+		
 		//retezce
 		for(int j = 0; j < 4; j++)
 		{
@@ -89,6 +91,7 @@ struct Game* reduceGames(int index)
 			memcpy(lessGames[i].vezeni, list_games[i].vezeni, sizeof(list_games[i].vezeni));
 			memcpy(lessGames[i].chestIndex, list_games[i].chestIndex, sizeof(list_games[i].chestIndex));
 			memcpy(lessGames[i].chanceIndex, list_games[i].chanceIndex, sizeof(list_games[i].chanceIndex));
+			memcpy(lessGames[i].vezeniLuck, list_games[i].vezeniLuck, sizeof(list_games[i].vezeniLuck));
 			
 			//retezce
 			for(int m = 0; m < 4; m++)

@@ -2,18 +2,17 @@ package com.mygdx.seme;
 
 import java.io.IOException;
 import java.net.SocketException;
+import java.util.Vector;
 
 public class TestClientRecieve extends Thread
 {	
-	Message [] buffer; 
-	
+	static final int MAXQUEUE = 7;
+	private Vector messages = new Vector();
 	boolean done;
 	
-	public TestClientRecieve(Message [] buff)
+	public TestClientRecieve()
 	{
 		done = true;
-		buffer = buff;
-		//index = 0;
 	}
 	
 	@Override
@@ -40,21 +39,22 @@ public class TestClientRecieve extends Thread
 					System.out.println("SR: |" + message + "|");
 					System.out.println("Prisel spatny format zpravy(chybi $)!");
 				}
+				else if(message.indexOf('#') == -1)
+				{
+					System.out.println("SR: |" + message + "|");
+					System.out.println("Prisel spatny format zpravy(chybi #)!");
+				}
 				else
 				{
-					//System.out.println("GET FROM SERVER synch index: " + LoginScreen.indBuff);
-					synchronized(buffer[LoginScreen.indBuff])
+					try
 					{
-						//System.out.println("GET FROM SERVER before index: " + LoginScreen.indBuff);
-						//System.out.println("RC1 " + Arrays.toString(buffer));
-						buffer[LoginScreen.indBuff].setMessage("SERVER", message.substring(1, message.length() - 1));
-						//System.out.println("RC2 " + Arrays.toString(buffer));
-						//System.out.println("GET FROM SERVER before2 index: " + LoginScreen.indBuff);
-						buffer[LoginScreen.indBuff].notify();
-						//System.out.println("indBuff TCR before" + LoginScreen.indBuff);
-						LoginScreen.indBuff++;
-						//System.out.println("indBuff TCR after" + LoginScreen.indBuff);
-						//System.out.println("GET FROM SERVER after index: " + LoginScreen.indBuff);
+						String zp = "S:" + message.substring(1, message.length() - 1);
+						putMessage(zp);
+					}
+					catch(InterruptedException e)
+					{
+						System.out.println("Chyba v ulozeni zpravy v producentovi!");
+						e.printStackTrace();
 					}
 				}
 			}
@@ -69,5 +69,31 @@ public class TestClientRecieve extends Thread
 		}
 		System.out.println("READING THREAD CLOSED");
 	}
+    
+    public synchronized void putMessage(String mess) throws InterruptedException
+    {
+        while(messages.size() == MAXQUEUE)
+        {
+            wait();
+        }
+        //messages.addElement(new java.util.Date().toString());
+        messages.addElement(mess);
+        System.out.println("put message");
+        notify();
+        //Later, when the necessary event happens, the thread that is running it calls notify() from a block synchronized on the same object.
+    }
+ 
+    // Called by Consumer
+    public synchronized String getMessage() throws InterruptedException
+    {
+        notify();
+        while(messages.size() == 0)
+        {
+            wait();//By executing wait() from a synchronized block, a thread gives up its hold on the lock and goes to sleep.
+        }
+        String message = (String) messages.firstElement();
+        messages.removeElement(message);
+        return message;
+    }
 	
 }

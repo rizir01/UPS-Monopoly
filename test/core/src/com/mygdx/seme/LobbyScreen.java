@@ -73,7 +73,8 @@ public class LobbyScreen implements Screen, InputProcessor
 		if(refreshDelay <= 0)
 		{
 			refreshDelay = 10000;
-			Monopoly.LoginScreen.sendToThread("GUI", "$refresh!0#");
+			//Monopoly.LoginScreen.sendToThread("GUI", "$refresh!0#");
+			Monopoly.LoginScreen.tc.sendMessageToServer("$refresh!0#");
 		}
 		else
 		{
@@ -157,12 +158,12 @@ public class LobbyScreen implements Screen, InputProcessor
 				{
 					if(selectedLobby == i)
 					{
-						renderLobbyInfo(x, y, 500, 100, lobbies[i].lobbyName, lobbies[i].getPocetHrau(), Color.RED);					
+						renderLobbyInfo(x, y, 500, 100, lobbies[i].lobbyName, lobbies[i].getPocetHracuRefresh(), Color.RED);					
 						drawButton(x + 400, y + 10, 80, 75, "JOIN");
 					}
 					else
 					{
-						renderLobbyInfo(x, y, 500, 100, lobbies[i].lobbyName, lobbies[i].getPocetHrau(), Color.GRAY);
+						renderLobbyInfo(x, y, 500, 100, lobbies[i].lobbyName, lobbies[i].getPocetHracuRefresh(), Color.GRAY);
 					}
 					y += 100 + 30; 
 				}
@@ -291,7 +292,16 @@ public class LobbyScreen implements Screen, InputProcessor
 			//Kontrola jestli nejake z tlacitek nebylo spusteno
 			if(isObjectTouched(touch, 30, height - 105, 200, 75))//DISCONNECT
 			{
-				Monopoly.LoginScreen.sendToThread("GUI", "$discon!0#");
+				//Monopoly.LoginScreen.sendToThread("GUI", "$discon!0#");
+				Monopoly.LoginScreen.tc.sendMessageToServer("$discon!0#");
+				/*
+				try {
+					Monopoly.LoginScreen.rc.putMessage("G:$discon!0#");
+				} catch (InterruptedException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				*/
 				try
 				{
 					Monopoly.LoginScreen.rc.join(1);
@@ -320,7 +330,16 @@ public class LobbyScreen implements Screen, InputProcessor
 			{
 				if(isObjectTouched(touch, 30 + 400, (30 + (130*selectedLobby)) + 10, 80, 75))
 				{
-					Monopoly.LoginScreen.sendToThread("GUI", "$join!" + selectedLobby + "#");
+					//Monopoly.LoginScreen.sendToThread("GUI", "$join!" + selectedLobby + "#");
+					Monopoly.LoginScreen.tc.sendMessageToServer("$join!" + selectedLobby + "#");
+					/*
+					try {
+						Monopoly.LoginScreen.rc.putMessage("G:$join!" + selectedLobby + "#");
+					} catch (InterruptedException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+					*/
 					buttonClickDelay = 25;
 				}				
 			}
@@ -329,7 +348,16 @@ public class LobbyScreen implements Screen, InputProcessor
 			{
 				if(isObjectTouched(touch, 260, height - 105, 200, 75))//LEAVE
 				{
-					Monopoly.LoginScreen.sendToThread("GUI", "$leave!0#");
+					//Monopoly.LoginScreen.sendToThread("GUI", "$leave!0#");
+					Monopoly.LoginScreen.tc.sendMessageToServer("$leave!0#");
+					/*
+					try {
+						Monopoly.LoginScreen.rc.putMessage("G:$leave!0#");
+					} catch (InterruptedException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+					*/
 					Monopoly.LobbyScreen.lobbies[selectedLobby].removePlayer(LoginScreen.login);
 					drawAllInfo = false;
 					//selectedLobby = -1;
@@ -340,12 +368,30 @@ public class LobbyScreen implements Screen, InputProcessor
 				{
 					if(ready)
 					{
-						Monopoly.LoginScreen.sendToThread("GUI", "$ready!0#");
+						//Monopoly.LoginScreen.sendToThread("GUI", "$ready!0#");
+						Monopoly.LoginScreen.tc.sendMessageToServer("$ready!0#");
+						/*
+						try {
+							Monopoly.LoginScreen.rc.putMessage("G:$ready!0#");
+						} catch (InterruptedException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+						*/
 						lobbies[selectedLobby].removeReady(Monopoly.LoginScreen.login);
 					}
 					else
 					{
-						Monopoly.LoginScreen.sendToThread("GUI", "$ready!1#");						
+						//Monopoly.LoginScreen.sendToThread("GUI", "$ready!1#");
+						Monopoly.LoginScreen.tc.sendMessageToServer("$ready!1#");
+						/*
+						try {
+							Monopoly.LoginScreen.rc.putMessage("G:$ready!1#");
+						} catch (InterruptedException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+						*/
 						lobbies[selectedLobby].addReady(Monopoly.LoginScreen.login);
 					}
 					ready = !ready;

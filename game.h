@@ -42,6 +42,11 @@ struct Game
 	//Index hrace ktery je ve vezeni
 	int vezeni[4];
 	
+	//Kolikrat dany hrac uz musel hazet na vezeni,
+	//pokud tato hodnota dosahne 5x, tak hrac je propusten
+	//z vezeni a muze dale pokracovat, protoze "luck" :D
+	int vezeniLuck[4];
+	
 	//Zamychany balicek s kartami na
 	//Comunity chest
 	int chestIndex[17];

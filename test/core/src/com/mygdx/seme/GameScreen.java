@@ -77,6 +77,8 @@ public class GameScreen implements Screen, InputProcessor
 	//WAITING ROOM
 	public static boolean waiting = true;
 	public static int [] waited;
+	//Index klienta v teto hre, pro usnadneni zobrazeni informaci pro kazdeho zvlast
+	public static int intKlient;
 	
 	
 	public static boolean pack = false;
@@ -108,7 +110,9 @@ public class GameScreen implements Screen, InputProcessor
 		//PRO TEST REALNEHO SERVERU
 		//vlakno = new Table("Druhe");
 		//vlakno.start();
-		Monopoly.LoginScreen.sendToThread("GUI", "$loaded!0#");
+		//Monopoly.LoginScreen.sendToThread("GUI", "$loaded!0#");
+		Monopoly.LoginScreen.tc.sendMessageToServer("$loaded!0#");
+
 		moneyDelay = new int[screenHraci.length];
 		lastThrow = new int[screenHraci.length][2];
 		for (int i = 0; i < lastThrow.length; i++)
@@ -116,12 +120,7 @@ public class GameScreen implements Screen, InputProcessor
 			lastThrow[i][0] = -1;
 			lastThrow[i][1] = -1;
 		}
-		/*
-		for (int i = 0; i <	screenTable.length; i++)
-		{
-			System.out.println(i + " " + screenTable[i]);
-		}
-		*/
+		identifyPlayer();
 	}
 
 	@Override
@@ -479,13 +478,16 @@ public class GameScreen implements Screen, InputProcessor
 			{
 				if(i == poziceHracu[j])
 				{
-					sr.setColor(barvy[(barvy.length - 2) - j]);
+					//sr.setColor(barvy[(barvy.length - 2) - j]);
 					if(i <= 10)
 					{
 						if(zmena != 0)
 						{
 							addSpace = 0;
 						}
+						sr.setColor(Color.BLACK);
+						sr.ellipse((x + widthB * 0.5f - widthPlayer * 0.5f) - 2, (boardHeight - widthA * 0.5f - widthPlayer * 0.5f - addSpace) - 2, widthPlayer + 4, widthPlayer + 4);
+						sr.setColor(barvy[(barvy.length - 2) - j]);
 						sr.ellipse(x + widthB * 0.5f - widthPlayer * 0.5f, boardHeight - widthA * 0.5f - widthPlayer * 0.5f - addSpace, widthPlayer, widthPlayer);
 						zmena = 0;
 					}
@@ -495,6 +497,9 @@ public class GameScreen implements Screen, InputProcessor
 						{
 							addSpace = 0;
 						}
+						sr.setColor(Color.BLACK);
+						sr.ellipse((widthA * 0.5f - widthPlayer * 0.5f + addSpace) - 2, (y + widthB * 0.5f - widthPlayer * 0.5f) - 2, widthPlayer + 4, widthPlayer + 4);
+						sr.setColor(barvy[(barvy.length - 2) - j]);
 						sr.ellipse(widthA * 0.5f - widthPlayer * 0.5f + addSpace, y + widthB * 0.5f - widthPlayer * 0.5f, widthPlayer, widthPlayer);
 						zmena = 1;
 					}
@@ -504,6 +509,9 @@ public class GameScreen implements Screen, InputProcessor
 						{
 							addSpace = 0;
 						}
+						sr.setColor(Color.BLACK);
+						sr.ellipse((x + widthB * 0.5f - widthPlayer * 0.5f) - 2, (y + widthB * 0.5f + addSpace) - 2, widthPlayer + 4, widthPlayer + 4);
+						sr.setColor(barvy[(barvy.length - 2) - j]);
 						sr.ellipse(x + widthB * 0.5f - widthPlayer * 0.5f, y + widthB * 0.5f + addSpace, widthPlayer, widthPlayer);
 						zmena = 2;
 					}
@@ -513,6 +521,9 @@ public class GameScreen implements Screen, InputProcessor
 						{
 							addSpace = 0;
 						}
+						sr.setColor(Color.BLACK);
+						sr.ellipse((boardWidth - widthA * 0.5f - widthPlayer * 0.5f - addSpace) - 2, (y + widthB * 0.5f - widthPlayer * 0.5f) - 2, widthPlayer + 4, widthPlayer + 4);
+						sr.setColor(barvy[(barvy.length - 2) - j]);
 						sr.ellipse(boardWidth - widthA * 0.5f - widthPlayer * 0.5f - addSpace, y + widthB * 0.5f - widthPlayer * 0.5f, widthPlayer, widthPlayer);
 						zmena = 3;
 					}
@@ -616,6 +627,8 @@ public class GameScreen implements Screen, InputProcessor
 			int j = 0;
 			for(int i = 0; i < waited.length; i++)
 			{
+				System.out.println("waiting render i: " + i);
+				System.out.println(Monopoly.LobbyScreen.currentLobby[i]);
 				if(!Monopoly.LobbyScreen.currentLobby[i].equals("--empty--"))
 				{
 					font.draw(batch, Monopoly.LobbyScreen.currentLobby[i], x, y);
@@ -639,25 +652,32 @@ public class GameScreen implements Screen, InputProcessor
 		float widthInfo = holeInside * (sizeOfInfo * 0.01f);
 		float widthButton = 200;
 		float heightButton = 50;
-		sr.begin(ShapeType.Filled);
+		if(pozice == intKlient)
+		{
+			sr.begin(ShapeType.Filled);
 			sr.setColor(Color.LIGHT_GRAY);
 			sr.rect(widthA + widthEdges + widthInfo * 0.5f - widthButton * 0.5f - 3, widthA + widthEdges + widthInfo * 0.75f - 3, widthButton + 6, heightButton + 6);
 			sr.setColor(Color.WHITE);
 			sr.rect(widthA + widthEdges + widthInfo * 0.5f - widthButton * 0.5f, widthA + widthEdges + widthInfo * 0.75f, widthButton, heightButton);
-		sr.end();
+			sr.end();			
+		}
 		batch.begin();
 			font.getData().setScale(0.25f);
 			font.setColor(barvy[(barvy.length - 2) - pozice]);
 			font.draw(batch, screenHraci[pozice].getName() + " je na tahu:", widthA + widthEdges + widthInfo * 0.18f, boardHeight - (widthA + widthEdges + widthInfo * 0.25f));
 			font.setColor(Color.BLACK);
-			font.draw(batch, "Start kola", widthA + widthEdges + widthInfo * 0.5f - widthButton * 0.5f + 20, boardHeight - (widthA + widthEdges + widthInfo * 0.75f + 15));
+			if(pozice == intKlient)
+			{
+				font.draw(batch, "Start kola", widthA + widthEdges + widthInfo * 0.5f - widthButton * 0.5f + 20, boardHeight - (widthA + widthEdges + widthInfo * 0.75f + 15));				
+			}
 		batch.end();
-		if(delay == 0)
+		if(delay == 0 && pozice == intKlient)
 		{
 			if(isObjectTouched(touch, widthA + widthEdges + widthInfo * 0.5f - widthButton * 0.5f, widthA + widthEdges + widthInfo * 0.75f, widthButton, heightButton))
 			{
 				//Tlacitko ze hazim kostkou
-				Monopoly.LoginScreen.sendToThread("GUI", "$game!roll#");
+				//Monopoly.LoginScreen.sendToThread("GUI", "$game!roll#");
+				Monopoly.LoginScreen.tc.sendMessageToServer("$game!roll#");
 				//transmission("s");
 				delaySet();
 				startRound = false;
@@ -699,7 +719,7 @@ public class GameScreen implements Screen, InputProcessor
 		float heightInfoB = widthInfo * 0.65f;
 		float heightButton = widthInfo * 0.075f;
 		sr.begin(ShapeType.Filled);	
-			if(type != -1)//MOZNA CHYBA
+			if(type != -1)//!!MOZNA CHYBA
 			{
 				sr.setColor(Color.LIGHT_GRAY);
 				sr.rect(widthA + widthEdges, widthA + widthEdges, widthInfo, widthInfo);
@@ -822,7 +842,8 @@ public class GameScreen implements Screen, InputProcessor
 					if(isObjectTouched(touch, widthA + widthEdges + widthInfoEdges, widthA + widthEdges + spaceInfoA + heightInfoA + 7, widthInfoA, heightButton))
 					{
 						//Zprava, ze chci pozemek koupit
-						Monopoly.LoginScreen.sendToThread("GUI", "$game!buy#");
+						//Monopoly.LoginScreen.sendToThread("GUI", "$game!buy#");
+						Monopoly.LoginScreen.tc.sendMessageToServer("$game!buy#");
 						//transmission("k");
 						notClick = true;
 						delaySet();
@@ -830,7 +851,8 @@ public class GameScreen implements Screen, InputProcessor
 					else if(isObjectTouched(touch, widthA + widthEdges + 2 * widthInfoEdges + widthInfoA, widthA + widthEdges + spaceInfoA + heightInfoA + 7, widthInfoB, heightButton))
 					{
 						//Zprava, ze chci o pozemek hrat v aukci
-						Monopoly.LoginScreen.sendToThread("GUI", "$game!auction#");
+						//Monopoly.LoginScreen.sendToThread("GUI", "$game!auction#");
+						Monopoly.LoginScreen.tc.sendMessageToServer("$game!auction#");
 						//transmission("a");
 						aukce = true;
 						aukcePozice = pozice;
@@ -973,7 +995,9 @@ public class GameScreen implements Screen, InputProcessor
 				if(isObjectTouched(touch, widthA + widthEdges + 2 * widthInfoEdges + widthInfoA + 100, widthA + widthEdges + widthInfoEdges + heightInfoB + 50, widthButton, heightButton))
 				{
 					//Zprava, ze prihazuji na pozemek <bid>
-					Monopoly.LoginScreen.sendToThread("GUI", "$aukce!add!" + bid + "#");
+					//Monopoly.LoginScreen.sendToThread("GUI", "$aukce!add!" + bid + "#");
+					System.out.println("KLIKAM PRIDAT V AUKCI");
+					Monopoly.LoginScreen.tc.sendMessageToServer("$aukce!add!" + bid + "#");
 					//transmission(bid + "");
 					notClick = true;
 					delaySet();
@@ -981,8 +1005,17 @@ public class GameScreen implements Screen, InputProcessor
 				else if(isObjectTouched(touch, widthA + widthEdges + 2 * widthInfoEdges + widthInfoA + 100, widthA + widthEdges + widthInfoEdges + heightInfoB + 50 + heightButton + 7, widthButton, heightButton))
 				{
 					//Zprava, ze ukoncuji ucast na aukci
-					Monopoly.LoginScreen.sendToThread("GUI", "$aukce!end!0#");
-					transmission("k");
+					//Monopoly.LoginScreen.sendToThread("GUI", "$aukce!end!0#");
+					Monopoly.LoginScreen.tc.sendMessageToServer("$aukce!end!0#");
+					/*
+					try {
+						Monopoly.LoginScreen.rc.putMessage("G:$aukce!end!0#");
+					} catch (InterruptedException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+					*/
+					//transmission("k");
 					notClick = true;
 					delaySet();
 				}
@@ -1528,6 +1561,24 @@ public class GameScreen implements Screen, InputProcessor
 		
 	}
 
+	public void identifyPlayer()
+	{
+		int ind = LobbyScreen.selectedLobby;
+		String [] hr = LobbyScreen.lobbies[ind].getHraci();
+		for(int i = 0; i < hr.length; i++)
+		{
+			System.out.println(hr[i]);
+			if(hr[i].equals(LoginScreen.login))
+			{
+				intKlient = i;
+				System.out.println(hr[i] + " ma index " + i);
+				return;
+			}
+		}
+		intKlient = -1;
+		System.out.println("Error, nenasel jsem stejny nazev pro toto jmeno " + LoginScreen.login);
+	}
+	
 	@Override
 	public void pause()
 	{

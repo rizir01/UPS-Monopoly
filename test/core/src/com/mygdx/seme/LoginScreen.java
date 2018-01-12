@@ -76,8 +76,8 @@ public class LoginScreen implements Screen, InputProcessor
 	public void show()
 	{
 		Gdx.input.setInputProcessor(this);
-		tc = new TestClient(bufferSend);
-		rc = new TestClientRecieve(bufferSend);
+		rc = new TestClientRecieve();
+		tc = new TestClient(rc);
 	}
 	
 	@Override

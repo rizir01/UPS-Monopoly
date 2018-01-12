@@ -563,6 +563,7 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z, int cl)
 					{
 						list_games[bi].penize[m] = 0;
 					}
+					list_games[bi].vezeniLuck[m] = 0;//Nastaveni vezeniLuck na default
 				}
 				shuffleChanceCards(&list_games[bi]);
 				shuffleChestCards(&list_games[bi]);
@@ -700,8 +701,9 @@ struct Zprava rozdeleniZpravyHra(struct Zprava z, int cl)
 		k.error = 2;
 		return k;
 	}
-	//printf("%s\n", front);
-	//printf("%s\n", back);
+	printf("%s\n", front);
+	printf("%s\n", back);
+	printf("SEM uroven -1.\n");
 	if(strcmp(front, "game") == 0)
 	{
 		if(strcmp(back, "roll") == 0)
@@ -827,6 +829,7 @@ struct Zprava rozdeleniZpravyHra(struct Zprava z, int cl)
 	}
 	else if(strcmp(front, "aukce") == 0)
 	{
+		printf("SEM uroven 0-1.\n");
 		char *e;
 		int indexI;
 		e = strchr(back, '!');
@@ -834,6 +837,7 @@ struct Zprava rozdeleniZpravyHra(struct Zprava z, int cl)
 		char forbuff[10];
 		memcpy(forbuff, &back[0], indexI);
 		forbuff[indexI] = '\0';
+		printf("SEM uroven 0-2.\n");
 		if(strcmp(forbuff, "add") == 0)
 		{
 			char subbuff[10];
@@ -912,7 +916,9 @@ struct Zprava rozdeleniZpravyHra(struct Zprava z, int cl)
 					printf("%s", k.msg);
 					return k;		
 				}
-				makeActionPRUAuction(indHracLobby, indH, 1, cislo, &list_games[indG]);	
+				makeActionPRUAuction(indHracLobby, indH, 1, cislo, &list_games[indG]);
+				k.error = 9;//!! Nechci nic posilat
+				return k;
 			}
 			else
 			{
@@ -986,12 +992,17 @@ struct Zprava rozdeleniZpravyHra(struct Zprava z, int cl)
 				printf("%s", k.msg);
 				return k;	
 			}
+			printf("SEM uroven 1.\n");
 			if(list_games[indG].aukce.auction == 1 && list_games[indG].aukce.aukceNatahu == indHracLobby)
 			{
+				printf("SEM uroven 2.\n");
 				makeActionPRUAuction(indHracLobby, indH, 0, -1, &list_games[indG]);
+				printf("SEM uroven 3.\n");
 				if(list_games[indG].aukce.auction == 2)
 				{
+					printf("SEM uroven 3-1.\n");
 					gameRulesPost(list_games[indG].natahu, lobbies[indL].hraciLobby[list_games[indG].natahu], &list_games[indG]);
+					printf("SEM uroven 3-2.\n");
 					int znova = 0;
 					if(list_games[indG].changeOfPlayers)
 					{
@@ -1016,6 +1027,7 @@ struct Zprava rozdeleniZpravyHra(struct Zprava z, int cl)
 					{
 						sprintf(k.msg, "$game!end!#\n");		
 					}
+					printf("SEM uroven 3-3.\n");
 					k.error = 0;
 					//!!
 					broadcastToLobby(lobbies[indL].hraciLobby, cl, k.msg);
