@@ -25,7 +25,8 @@ public class TestClient extends Thread
 	
 	TestClientRecieve tcr;
 	
-	Message [] buffer;
+	//0-login, 1-register pri spusteni vlakna
+	int typeLogin;
 	
 	static Socket socket;
 	
@@ -98,13 +99,30 @@ public class TestClient extends Thread
 							System.out.println("Chyba parametry pro rozliseni prijmuti a poslani zpravy(Stav 3 hrace - Hra)!");
 						}
 						break;
+				case 4:if(message.charAt(0) == 'G')
+						{
+							send = message.substring(2);
+							bw.write(send.getBytes());
+							System.out.println("GUI---"+ send + "---");
+						}
+						else if(message.charAt(0) == 'S')
+						{
+							String internal = message.substring(2);
+							System.out.println("SERVER---"+ internal + "---");
+							defineSituationEnd(internal);
+						}
+						else
+						{
+							System.out.println("Chyba parametry pro rozliseni prijmuti a poslani zpravy(Stav 3 hrace - Hra)!");
+						}
+						break;
 				default:System.out.println("Chyba, stav hrace spatne definovany!");
 						break;
 				}
 			}
 			catch(SocketException se)
 			{
-				
+				//Padnul server nebo neni dosazitelny
 			}
 			catch(InterruptedException e)
 			{
@@ -115,6 +133,66 @@ public class TestClient extends Thread
 			{
 				e.printStackTrace();
 			}
+		}
+	}
+	
+	public int defineSituationEnd(String instrukce)
+	{
+		int indV = instrukce.indexOf('!');
+		if(indV == -1)//neni vykricnik ve zprava
+		{
+			System.out.println("Prijmuta zprava neobsahuje parsovaci znak '!'");
+			return 1;
+		}
+		String front = instrukce.substring(0, indV);
+		String back = instrukce.substring(indV + 1);
+		
+		if(front.equals("return"))
+		{
+			String [] pole = Assets.separeter(back, '!');
+			if(pole[0].equals("accept"))
+			{
+				stavHrace = 2;
+				Monopoly.EndScreen.hide = true;
+				LobbyScreen.drawAllInfo = true;
+				Monopoly.EndScreen.game.setScreen(Monopoly.LobbyScreen);
+				return 0;
+			}
+			else if(pole[0].equals("decline"))
+			{				
+				System.out.println("Cislo chyby u return je " + pole[1]);
+				return 0;
+			}
+			else
+			{
+				System.out.println("Spatne poslany nejaky jiny parametr " + back + "!");
+				return 1;
+			}
+		}
+		else if(front.equals("discon"))
+		{
+			String [] pole = Assets.separeter(back, '!');
+			if(pole[0].equals("accept"))
+			{
+				Monopoly.EndScreen.hide = false;
+				Monopoly.EndScreen.game.setScreen(Monopoly.LoginScreen);
+				return 0;
+			}
+			else if(pole[0].equals("decline"))
+			{				
+				System.out.println("Cislo chyby u return je " + pole[1]);
+				return 0;
+			}
+			else
+			{
+				System.out.println("Spatne poslany nejaky jiny parametr " + back + "!");
+				return 1;
+			}
+		}
+		else
+		{
+			System.out.println("Neznama zprava " + instrukce);
+			return 0;
 		}
 	}
 	
@@ -161,7 +239,26 @@ public class TestClient extends Thread
 			String [] input = Assets.separeter(back, '!');
 			if(input[0].equals("accept"))
 			{
-				//Vytvorit lobby, o kterou jsem si puvodne zazadal, prevzit hodnoty nekde z GUI				
+				//Vytvorit lobby, o kterou jsem si puvodne zazadal, prevzit hodnoty nekde z GUI
+				int pocetLobbyin = LobbyScreen.lobbies.length;
+				Lobby [] noveLobby = new Lobby[pocetLobbyin + 1];
+				for(int i = 0; i < pocetLobbyin; i++)
+				{
+					noveLobby[i] = LobbyScreen.lobbies[i];
+				}
+				noveLobby[pocetLobbyin] = new Lobby(Monopoly.LobbyScreen.lobbyName);
+				LobbyScreen.lobbies = noveLobby;
+				
+				//Priradit do nove vytvorene lobby hrace, ktery zavolal create
+				int pocetL = 1;
+				LobbyScreen.selectedLobby = pocetLobbyin;
+				Monopoly.LobbyScreen.currentLobby = new String[4];
+				for(int i = 0; i < pocetL; i++)
+				{
+					LobbyScreen.lobbies[pocetLobbyin].addPlayer(LoginScreen.login);
+					Monopoly.LobbyScreen.currentLobby[i] = LoginScreen.login;
+				}
+				LobbyScreen.drawAllInfo = true;
 			}
 			else if(input[0].equals("decline"))
 			{
@@ -413,7 +510,7 @@ public class TestClient extends Thread
 				{
 					try
 					{
-						int poz1 = Integer.parseInt(info[2]);
+						//int poz1 = Integer.parseInt(info[2]);
 						GameScreen.startRound = false;//!!
 						GameScreen.aukce = true;
 						GameScreen.aukcePozice = GameScreen.pozice;
@@ -471,6 +568,13 @@ public class TestClient extends Thread
 			{
 				Table.transmission("l!"+ info[1] + "!");
 			}
+			else if(info[0].equals("win"))
+			{
+				stavHrace = 4;
+				GameScreen.winName = info[1];
+				Monopoly.GameScreen.hide = true;
+				Monopoly.LoginScreen.game.setScreen(Monopoly.EndScreen);
+			}
 			else
 			{
 				System.out.println("Error - predana zprava neobsahuje zadny z parametru, ktere by\n"
@@ -513,6 +617,54 @@ public class TestClient extends Thread
 						+ "program znal " + instrukce);
 				return 1;
 			}
+			return 0;
+		}
+		else if(front.equals("leave"))
+		{
+			String [] info3 = Assets.separeter(back, '!');
+			if(info3[0].equals("accept"))
+			{
+				Monopoly.GameScreen.hide = true;
+				Monopoly.LoginScreen.game.setScreen(Monopoly.LobbyScreen);
+			}
+			else if(info3[0].equals("decline"))
+			{
+				System.out.println("Nelze opustit hru, z duvodu chyby na serveru!\n"
+						+ "Pravdepodbne chyba v nalezeni hrace/lobby/hry!");
+				return 1;
+			}
+			else
+			{
+				System.out.println("Pro leave parametr, nebyl uveden spravny podparameter - " + info3[0] + "!");
+				return 1;
+			}
+			return 0;
+		}
+		else if(front.equals("left"))
+		{
+			String [] info4 = Assets.separeter(back, '!');
+			for(int i = 0; i < GameScreen.screenHraci.length; i++)
+			{
+				if(GameScreen.screenHraci[i].getName().equals(info4[0]))
+				{
+					System.out.println("Hrac " + GameScreen.screenHraci[i].getName() + " opustil hru!");
+					Table.transmission("l!"+ i + "!");
+					break;
+				}			
+			}
+			for (int i = 0; i < Monopoly.LobbyScreen.currentLobby.length; i++)
+			{
+				if(Monopoly.LobbyScreen.currentLobby[i] != null)
+				{
+					if(Monopoly.LobbyScreen.currentLobby[i].equals(info4[0]))
+					{
+						System.out.println("Smazan v currentLobby " + i);
+						Monopoly.LobbyScreen.currentLobby[i] = null;
+						break;
+					}
+				}
+			}		
+			System.out.println("Hrac s nazvem "+info4[0]+" odesel!");
 			return 0;
 		}
 		else
@@ -572,9 +724,46 @@ public class TestClient extends Thread
 				System.out.println("Zadana zprava neobsahuje validni parametr!");
 			}
 		}
+		else if(front.equals("register"))
+		{
+			indV = back.indexOf('!');
+			if(indV == -1)//neni vykricnik ve zprava
+			{
+				System.out.println("Prijmuta zprava po 'register' neobsahuje parsovaci znak '!'");
+				System.exit(1);
+			}
+			
+			String back2 = back.substring(0, indV);
+			String back3 = back.substring(indV + 1);
+			if(back2.equals("accept"))
+			{
+				System.out.println("Byl jste uspesne prihlasen!");
+				new Thread(Monopoly.LoginScreen.rc, "GET FROM SERVER").start();
+				stavHrace = 2;
+				Monopoly.LoginScreen.game.setScreen(Monopoly.LobbyScreen);
+				return 1;
+			}
+			else if(back2.equals("decline"))
+			{
+				char zn = back3.charAt(0);
+				switch(zn)
+				{
+				case '1':System.out.println("Hrac s timto loginem jiz existuje!");
+						 break;
+				case '2':System.out.println("Zaslana zprava neobsahuje paramater 'register' nebo 'login!");
+					 	 break;
+				default:System.out.println("Zadana zprava neobsahuje validni parametr" + zn + "!");
+						break;
+				}
+			}
+			else
+			{
+				System.out.println("Zadana zprava neobsahuje validni parametr back2!");
+			}
+		}
 		else
 		{
-			System.out.println("Zadana zprava neobsahuje validni parametr!");
+			System.out.println("Zadana zprava neobsahuje validni parametr front!");
 		}
 		return 0;
 	}
@@ -609,13 +798,23 @@ public class TestClient extends Thread
 			//POSLANI, zacatek zpravy $ a konec #
 			bw = socket.getOutputStream();
 			bf = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-
-			String z = "$login!" + LoginScreen.login + "!" + LoginScreen.pass + "#\n";
-			System.out.println("Posilam zpravu serveru: " + z);
+			
+			String typeS = "";
+			if(typeLogin == 0)
+			{
+				typeS = "login";
+			}
+			else
+			{
+				typeS = "register";
+			}
+			String z = "$" + typeS + "!" + LoginScreen.login + "!" + LoginScreen.pass + "#";
+			//System.out.println("Posilam zpravu serveru: " + z);
 			bw.write(z.getBytes());
 			
 			//PRIJEM
 			String message = (String)bf.readLine();
+			System.out.println(message);
 			int ren = defineSituationLogin(message);
 			if(ren == 1)
 			{
@@ -641,49 +840,5 @@ public class TestClient extends Thread
 		}
 		System.out.println("EXIT");
 	}
-	
-	/**
-	public synchronized String [][] getData()
-	{
-		//System.out.println("READING in index: " + LoginScreen.indBuff);
-		int vel = LoginScreen.indBuff;
-		String [][] vys = new String[vel][2];
-		//System.out.println("TC before 1 " + Arrays.toString(buffer));	
-		for(int i = 0; i < vys.length; i++)
-		{
-			vys[i][0] = buffer[i].getMessageType();
-			vys[i][1] = buffer[i].getMessageData();
-		}
-		//System.out.println("TC before 2 " + Arrays.toString(buffer));
-		int j = vel;//Na pozici, kde nic jeste neni(tam kde jsem nic nesebral)
-		for (int i = 0; i < buffer.length - vel; i++)
-		{
-			buffer[i].setAll(buffer[j++].getAll());			
-		}
-		//System.out.println("TC after"+ Arrays.toString(buffer));
-		for(int i = 0; i < vys.length; i++)
-		{
-			System.out.println(Arrays.toString(vys[i]));
-		}
-		//System.out.println("indBuff TestClient before" + LoginScreen.indBuff);
-		LoginScreen.indBuff -= vel;//--
-		//System.out.println("indBuff TestClient after" + LoginScreen.indBuff);
-		return vys;
-		
-		/*
-		String [] vys = buffer[0].getAll();
-		System.out.println("TC before" + Arrays.toString(buffer));
-		for (int i = 0; i < buffer.length - 1; i++)
-		{
-			buffer[i].setAll(buffer[i+1].getAll());			
-		}
-		System.out.println("TC after"+ Arrays.toString(buffer));
-		System.out.println(Arrays.toString(vys));
-		System.out.println("indBuff TestClient before" + LoginScreen.indBuff);
-		LoginScreen.indBuff--;
-		System.out.println("indBuff TestClient after" + LoginScreen.indBuff);
-		return vys;
-		
-	}
-	 */
+
 }

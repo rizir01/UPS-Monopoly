@@ -7,17 +7,16 @@ public class Monopoly extends Game
 	public static GameScreen GameScreen;
 	public static LoginScreen LoginScreen;
 	public static LobbyScreen LobbyScreen;
+	public static EndScreen EndScreen;
 
 	@Override
 	public void create()
 	{
 		Assets.load();//Nacte textury, mapu hry a pocatecni stav hry(hrace a jejich majetek)
-		//Server server = new Server();
-		//server.start();
 		GameScreen = new GameScreen(this);
 		LobbyScreen = new LobbyScreen(this);
 		LoginScreen = new LoginScreen(this);
+		EndScreen = new EndScreen(this);
 		setScreen(LoginScreen);
-		//setScreen(GameScreen);
 	}
 }

@@ -1,7 +1,8 @@
 //WHITELIST lidi na server, [login#heslo]
-5
+6
 admin!admin
 nohac!nohac
 petr!petr
 michal!michal
 michal10!michal10
+admin2!admin

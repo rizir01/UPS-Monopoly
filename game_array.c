@@ -146,6 +146,23 @@ int addGame(int idLob)
 	list_games = boostGames();
 	list_games[index].idLobby = idLob;
 	
+	//Defaultni hodnoty
+	for(int m = 0; m < 4; m++)
+	{
+		list_games[index].vezeniLuck[m] = 0;
+		list_games[index].poziceHracu[m] = 0;
+		memset(&list_games[index].upgrady[m], '\0', sizeof(list_games[index].upgrady[m]));
+		memset(&list_games[index].budovy[m], '\0', sizeof(list_games[index].budovy[m]));
+		list_games[index].vezeni[m] = 0;
+		list_games[index].vezeniLuck[m] = 0;
+	}
+	list_games[index].anotherRun = 0;
+	list_games[index].changeOfPlayers = 0;//!!
+	list_games[index].hodStejnych = 0;
+	list_games[index].jailFree = -1;
+	list_games[index].natahu = 0;
+	list_games[index].aukce.auction = 0;
+	
 	pthread_mutex_unlock(&lockGame);
 	return index;
 }

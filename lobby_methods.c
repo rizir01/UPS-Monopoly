@@ -294,6 +294,18 @@ int getIndexLobbyWhereIsHrac(int indexHrace)
 	return -1;
 }
 
+int getIndexLobby(char* nazevLobby)
+{
+	for(int i = 0; i < length_lobbies; i++)
+	{
+		if(strcmp(lobbies[i].lobbyName, nazevLobby) == 0)
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
 int isEveryoneReady(int indexLobby)
 {
 	int p = 0;

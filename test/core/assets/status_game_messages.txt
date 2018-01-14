@@ -11,6 +11,9 @@ $discon!0# - odhlasit se
 SERVER -> CLIENT
 $pre!add!index hrace!# - dany hrac je uz ve hre a ceka na ostatni az budou ostatni ready
 $pre!start|retezec s kompletnim stavem hry|# - server posle vsem hracum pocatecni stav hry a pak server ceka na input od hracu natahu
+$left!nazev hrace!# - Ktery hrac opustil hru
+$leave!accept!# - Povoleni opustit hru
+$leave!decline!cislo chyby!# - Nepovoleni opustit hru v momentalnim stavu
 $game!start!kostka1,kostka2!# - hrac hodil kostka1 a kostka2 a hra ma zacit pro konkretiho hrace
 $game!end!# - hrac ukoncil svuj tah
 $game!lose!index hrace!# - Hrac prohral hru, pokud je to ten samy jako klient, uz se nebude moct ucastnit hry
@@ -27,4 +30,5 @@ $game!aukce!end!# - Ukonceni aukce
 $game!get!index hrace!castka!# - Hrac(index) ziskava <castka>
 $game!chest!stav!# - Hrac zpracuje ze <stav> co se ma provest z community chest
 $game!chance!stav!# - Hrac zpracuje ze <stav> co se ma provest z chance
-$game!buy!fail!# - Hrac ma nedostatek penez na ucte 
+$game!buy!fail!# - Hrac ma nedostatek penez na ucte
+$game!win!nazev hrace!# - Vyhral hras s <indexem> a hra se premisti do obrazovky se statisikami 

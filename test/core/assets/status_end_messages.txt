@@ -1,0 +1,9 @@
+CLIENT -> SERVER
+$return!0# - Vrati se client do lobby v LobbyScreen, kde opet zase bude muset nastavit ready system
+$discon!0# - Uzivatel se odhlasi
+
+SERVER -> CLIENT
+$return!accept!# - Potrvzeni vraceni se zpet
+$return!decline!cislo!# - Odmitnuti vraceni se zpet
+$discon!accept!# - Hrac opustil server
+$discon!decline!cislo!# - Chyba pri odhlasovani

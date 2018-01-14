@@ -1,6 +1,8 @@
 package com.mygdx.seme;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 
 import com.badlogic.gdx.Gdx;
@@ -26,6 +28,7 @@ public class GameScreen implements Screen, InputProcessor
 	ShapeRenderer sr;
 	Vector3 touch;
 	Random rand;
+	boolean hide;
 	
 	static int hodStejnych = 0;
 	static boolean [] changeOfPlayers = new boolean[1];
@@ -77,8 +80,10 @@ public class GameScreen implements Screen, InputProcessor
 	//WAITING ROOM
 	public static boolean waiting = true;
 	public static int [] waited;
-	//Index klienta v teto hre, pro usnadneni zobrazeni informaci pro kazdeho zvlast
+	/**Index klienta v teto hre, pro usnadneni zobrazeni informaci pro kazdeho zvlast*/
 	public static int intKlient;
+	
+	public static String winName;
 	
 	
 	public static boolean pack = false;
@@ -112,7 +117,7 @@ public class GameScreen implements Screen, InputProcessor
 		//vlakno.start();
 		//Monopoly.LoginScreen.sendToThread("GUI", "$loaded!0#");
 		Monopoly.LoginScreen.tc.sendMessageToServer("$loaded!0#");
-
+		hide = false;
 		moneyDelay = new int[screenHraci.length];
 		lastThrow = new int[screenHraci.length][2];
 		for (int i = 0; i < lastThrow.length; i++)
@@ -162,6 +167,8 @@ public class GameScreen implements Screen, InputProcessor
 			//Vykresleni informaci kazdeho hrace na prave
 			//strane herniho platna
 			renderPlayerStats(delta);
+			
+			renderButtons(delta);
 			
 			//Vykresleni plneho zobrazeni informaci od danem
 			//poli uprostred platna hraci plochy vcetne vsech
@@ -601,6 +608,51 @@ public class GameScreen implements Screen, InputProcessor
 		batch.end();
 	}
 	
+	public void renderButtons(float delta)
+	{
+		drawButton(765, 555, 150, 50, "LEAVE");
+		drawButton(765, 635, 150, 50, "DISCON");
+		
+		if(!notClick && delay == 0)
+		{
+			if(isObjectTouched(touch, 765, 555, 150, 50))
+			{
+				//System.out.println("LEAVE");
+				Monopoly.LoginScreen.tc.sendMessageToServer("$leave!0#");
+				hide = true;
+				LobbyScreen.drawAllInfo = false;
+				delaySet();
+			}
+			else if(isObjectTouched(touch, 765, 635, 150, 50))
+			{
+				System.out.println("DISCON");
+				//Discon se posle z funkce hide(); !
+				hide = false;
+				game.setScreen(Monopoly.LoginScreen);
+				delaySet();
+			}
+		}
+	}
+	
+	public void drawButton(float x, float y, float widthX, float widthY, String text)
+	{
+		float spaceTextX = 5;
+		float spaceTextY = (widthY / 2) - 15;//15 je pro velikost pisma
+		sr.begin(ShapeType.Filled);
+			sr.setColor(Color.LIGHT_GRAY);
+			sr.rect(x, y, widthX, widthY);//Normalne widthH vykresluje arc nahoru, ne dolu!
+		sr.end();
+		sr.begin(ShapeType.Line);
+			sr.setColor(Color.BLACK);
+			sr.rect(x, y, widthX, widthY);
+		sr.end();
+		batch.begin();
+			font.setColor(Color.BLACK);
+			font.getData().setScale(0.25f);
+			font.draw(batch, text, x + spaceTextX, (height - y) - spaceTextY);
+		batch.end();
+	}
+	
 	public void renderWaitingRoom(float delta)
 	{
 		float widthInfo = width * info;
@@ -756,7 +808,7 @@ public class GameScreen implements Screen, InputProcessor
 					sr.rect(widthA + widthEdges + 2 * widthInfoEdges + widthInfoA, widthA + widthEdges + spaceInfoB, widthInfoB, 60);				
 					
 				}
-				if(karta.getOwnPlayerID() == -1)
+				if(karta.getOwnPlayerID() == -1 && pozice == intKlient)
 				{
 					sr.setColor(Color.WHITE);
 					sr.rect(widthA + widthEdges + widthInfoEdges, widthA + widthEdges + spaceInfoA + heightInfoA + 7, widthInfoA, heightButton);
@@ -773,8 +825,11 @@ public class GameScreen implements Screen, InputProcessor
 				{
 					font.draw(batch, "Naprodej",  widthA + widthEdges + (widthInfo * 0.5f) - 60, widthA + widthEdges + widthInfo - 20);
 					font.draw(batch, ((Property)karta).getPropertyCost() + "$",  widthA + widthEdges + (widthInfo * 0.5f) - 25, widthA + widthEdges + widthInfo - 60);
-					font.draw(batch, "Koupit", widthA + widthEdges + widthInfoEdges, boardHeight - (widthA + widthEdges + spaceInfoA + heightInfoA + 11));
-					font.draw(batch, "Aukce", widthA + widthEdges + 2 * widthInfoEdges + widthInfoA, boardHeight - (widthA + widthEdges + spaceInfoA + heightInfoA + 11));
+					if(pozice == intKlient)
+					{
+						font.draw(batch, "Koupit", widthA + widthEdges + widthInfoEdges, boardHeight - (widthA + widthEdges + spaceInfoA + heightInfoA + 11));
+						font.draw(batch, "Aukce", widthA + widthEdges + 2 * widthInfoEdges + widthInfoA, boardHeight - (widthA + widthEdges + spaceInfoA + heightInfoA + 11));						
+					}
 				}
 				font.getData().setScale(0.14f);
 				//INFO A
@@ -799,8 +854,11 @@ public class GameScreen implements Screen, InputProcessor
 				{
 					font.draw(batch, "Naprodej",  widthA + widthEdges + (widthInfo * 0.5f) - 60, widthA + widthEdges + widthInfo - 20);
 					font.draw(batch, "200$",  widthA + widthEdges + (widthInfo * 0.5f) - 25, widthA + widthEdges + widthInfo - 60);
-					font.draw(batch, "Koupit", widthA + widthEdges + widthInfoEdges, boardHeight - (widthA + widthEdges + spaceInfoA + heightInfoA + 11));
-					font.draw(batch, "Aukce", widthA + widthEdges + 2 * widthInfoEdges + widthInfoA, boardHeight - (widthA + widthEdges + spaceInfoA + heightInfoA + 11));
+					if(pozice == intKlient)
+					{
+						font.draw(batch, "Koupit", widthA + widthEdges + widthInfoEdges, boardHeight - (widthA + widthEdges + spaceInfoA + heightInfoA + 11));
+						font.draw(batch, "Aukce", widthA + widthEdges + 2 * widthInfoEdges + widthInfoA, boardHeight - (widthA + widthEdges + spaceInfoA + heightInfoA + 11));						
+					}
 				}
 				font.getData().setScale(0.14f);
 				//INFO A
@@ -819,8 +877,11 @@ public class GameScreen implements Screen, InputProcessor
 				{
 					font.draw(batch, "Naprodej",  widthA + widthEdges + (widthInfo * 0.5f) - 60, widthA + widthEdges + widthInfo - 20);
 					font.draw(batch, "150$",  widthA + widthEdges + (widthInfo * 0.5f) - 25, widthA + widthEdges + widthInfo - 60);
-					font.draw(batch, "Koupit", widthA + widthEdges + widthInfoEdges, boardHeight - (widthA + widthEdges + spaceInfoA + heightInfoA + 11));
-					font.draw(batch, "Aukce", widthA + widthEdges + 2 * widthInfoEdges + widthInfoA, boardHeight - (widthA + widthEdges + spaceInfoA + heightInfoA + 11));
+					if(pozice == intKlient)
+					{
+						font.draw(batch, "Koupit", widthA + widthEdges + widthInfoEdges, boardHeight - (widthA + widthEdges + spaceInfoA + heightInfoA + 11));
+						font.draw(batch, "Aukce", widthA + widthEdges + 2 * widthInfoEdges + widthInfoA, boardHeight - (widthA + widthEdges + spaceInfoA + heightInfoA + 11));						
+					}
 				}
 				font.getData().setScale(0.14f);
 				//INFO A
@@ -837,7 +898,7 @@ public class GameScreen implements Screen, InputProcessor
 			}
 			if(karta.getOwnPlayerID() == -1)
 			{
-				if(!notClick && delay == 0)
+				if(!notClick && delay == 0 && pozice == intKlient)
 				{
 					if(isObjectTouched(touch, widthA + widthEdges + widthInfoEdges, widthA + widthEdges + spaceInfoA + heightInfoA + 7, widthInfoA, heightButton))
 					{
@@ -1363,6 +1424,10 @@ public class GameScreen implements Screen, InputProcessor
 				System.out.println("COMMUNITY CHEST - DONE");
 			    break;
 		case 'l':ind = Integer.parseInt(vstup[1]);
+				if(ind == intKlient)
+				{
+					intKlient = -1;
+				}
 				Player [] newHraci = new Player[screenHraci.length - 1];
 				int [] newMoneyDelay = new int[moneyDelay.length - 1];
 				int [][] newThrow = new int[lastThrow.length - 1][2];
@@ -1388,6 +1453,11 @@ public class GameScreen implements Screen, InputProcessor
 				screenHraci = newHraci;
 				moneyDelay = newMoneyDelay;
 				lastThrow = newThrow;
+				
+				if(pozice >= screenHraci.length)
+				{
+				    pozice = 0;
+				}
 			    break;
 		case 'c':zmenaPozice = false;
 				switch(vstup[1].charAt(0))
@@ -1565,6 +1635,7 @@ public class GameScreen implements Screen, InputProcessor
 	{
 		int ind = LobbyScreen.selectedLobby;
 		String [] hr = LobbyScreen.lobbies[ind].getHraci();
+		System.out.println(Arrays.toString(hr));
 		for(int i = 0; i < hr.length; i++)
 		{
 			System.out.println(hr[i]);
@@ -1594,7 +1665,30 @@ public class GameScreen implements Screen, InputProcessor
 	@Override
 	public void hide()
 	{
-
+		if(!hide)
+		{
+			Monopoly.LoginScreen.tc.sendMessageToServer("$discon!0#");
+			try
+			{
+				Monopoly.LoginScreen.rc.join(10);
+				Monopoly.LoginScreen.tc.bf.close();
+				Monopoly.LoginScreen.tc.bw.close();
+				Monopoly.LoginScreen.tc.socket.close();
+				Monopoly.LoginScreen.tc.join(10);
+			}
+			catch (InterruptedException e)
+			{
+				System.out.println("ON CLOSE INTER EXCEPTION");
+				e.printStackTrace();
+			}
+			catch (IOException e)
+			{
+				System.out.println("ON CLOSE IOEXCEPTION");
+				e.printStackTrace();
+			}
+			LobbyScreen.lobbies = null;
+			delaySet();		
+		}
 	}
 
 	@Override

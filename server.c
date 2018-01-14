@@ -79,6 +79,51 @@ int nactiFileSHesly()
 	return 0;
 }
 
+int saveWhiteList()
+{
+	char buf[100];
+	memset(&buf, 0, sizeof(buf));
+	passwd = fopen("passwd.txt", "w");
+	
+	if(passwd == NULL)
+    {
+        perror("Error\n");   
+        exit(1);             
+    }
+    
+	fprintf(passwd, "//WHITELIST lidi na server, [login#heslo]\n");
+	fprintf(passwd, "%d\n" , listNum);
+	
+	for(int i = 0; i < listNum; i++)
+	{
+		fprintf(passwd, "%s\n", whitelist[i]);
+	}
+	
+	fclose(passwd);
+	printf("WHITELIST ULOZEN\n");
+	return 0;
+}
+
+int addMemberToWhitelist(char *record)
+{
+	//Vytvorit
+	char** whitelist2 = malloc((listNum + 1) * sizeof(char*));
+	for(int i = 0; i < listNum + 1; i++)
+	{
+		whitelist2[i] = malloc(51 * sizeof(char));
+	}
+	//Zkopirovat
+	for(int i = 0; i < listNum; i++)
+	{
+		strcpy(whitelist2[i], whitelist[i]);	
+	}
+	strcpy(whitelist2[listNum], record);
+	uvolniWhitelist();
+	whitelist = whitelist2; 
+	listNum++;
+	return 0;
+}
+
 /**
  * Funkce, ktera na zaklade prijmute zpravy dekoduje,
  * co s ni ma provest a nasledne danou akci provede
@@ -122,7 +167,7 @@ struct Zprava rozdeleniZprav(struct Zprava z)
 	{
 		for(int i = 0; i < listNum; i++)
 		{
-			if(strcmp(back, whitelist[i]) == 0)
+			if(strcmp(back, whitelist[i]) == 0)//!!Pozor, kdyz soubor s hesly ulozim v PSPadu tak to pak nefunguje
 			{
 				char naz[50];
 				memset(&naz, 0, sizeof(naz));
@@ -175,17 +220,55 @@ struct Zprava rozdeleniZprav(struct Zprava z)
 			return k;
 		}
 	}
+	else if(strcmp(front, "register") == 0)
+	{
+		pthread_mutex_lock(&lockSep);
+			
+		separeter(back, '!');
+		char jm[50];
+		char psw[50];
+		strcpy(jm, sepa[0]);
+		strcpy(psw, sepa[1]);
+		
+		pthread_mutex_unlock(&lockSep);
+		
+		for(int i = 0; i < listNum; i++)
+		{
+			pthread_mutex_lock(&lockSep);
+			
+			separeter(whitelist[i], '!');
+			char vys[2][50];
+			strcpy(vys[0], sepa[0]);
+			strcpy(vys[1], sepa[1]);
+			
+			pthread_mutex_unlock(&lockSep);
+			
+			if(strcmp(jm, vys[0]) == 0)
+			{
+				//Hrac jiz s timto loginem existuje
+				strcpy(k.msg, "register!decline!1!\n");
+				k.length = strlen(k.msg);
+				k.error = 1;
+				return k;
+			}
+		}
+		
+		//Pridat tohoto hrace do whitelistu
+		addMemberToWhitelist(back);
+		saveWhiteList();
+		zazInd = listNum - 1;
+	}
 	else
 	{
 		//Spatny parametr login, neco jineho, treba llogin
-		strcpy(k.msg, "login!decline!2!\n");
+		sprintf(k.msg, "%s!decline!2!\n", front);
 		k.length = strlen(k.msg);
 		k.error = 2;
 		return k;
 	}
 	
 	//Vse probehlo spravne
-	strcpy(k.msg, "login!accept!0!\n");
+	sprintf(k.msg, "%s!accept!0!\n", front);
 	k.zaznamInd = zazInd;
 	k.length = strlen(k.msg);
 	k.error = 0;
@@ -275,8 +358,48 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z, int cl)
 		}
 		else
 		{
-			sprintf(k.msg, "$create!accpet!#\n");	
+			sprintf(k.msg, "$create!accept!#\n");	
 			k.error = 0;
+		}
+		
+		//Pridat hrace do teto lobby
+		int inH = -1;
+		for(int i = 0;i < length_hraci;i++)
+		{
+			if(hraci[i].init == 1 && hraci[i].client_socket == cl)
+			{
+				inH = i;
+				break;
+			}
+		}
+		if(inH == -1)
+		{
+			printf("Chyba, hrac nebyl nalezen v seznamu hracu!\n");
+			sprintf(k.msg, "$create!decline!3!#\n");
+			k.length = strlen(k.msg);
+			k.error = 3;
+			printf("%s", k.msg);
+			return k;
+		}
+		int indL = getIndexLobby(back);
+		if(indL == -1)
+		{
+			printf("Chyba, lobby s nazvem %s neni v seznamu lobbyin!\n", back);
+			sprintf(k.msg, "$create!decline!4!#\n");
+			k.length = strlen(k.msg);
+			k.error = 4;
+			printf("%s", k.msg);
+			return k;
+		}
+		int returnValue1 = addPlayer(inH, indL);
+		if(returnValue1 >= 1)
+		{
+			printf("Chyba, neslo pridat do konkretni lobby hrace s chybou %d\n", returnValue1);
+			sprintf(k.msg, "$create!decline!4-1!#\n");
+			k.length = strlen(k.msg);
+			k.error = 4;
+			printf("%s", k.msg);
+			return k;
 		}
 		k.length = strlen(k.msg);
 		printf("%s", k.msg);
@@ -563,7 +686,6 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z, int cl)
 					{
 						list_games[bi].penize[m] = 0;
 					}
-					list_games[bi].vezeniLuck[m] = 0;//Nastaveni vezeniLuck na default
 				}
 				shuffleChanceCards(&list_games[bi]);
 				shuffleChestCards(&list_games[bi]);
@@ -667,6 +789,164 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z, int cl)
 		k.length = strlen(k.msg);
 		return k;
 	}	
+}
+
+//ZPracovani logicke zpravy od klienta, porovnani spravnosti
+//nasledne provedeni dane akce.
+struct Zprava rozdeleniZpravyEnd(struct Zprava z, int cl)
+{
+	struct Zprava k;
+	k.zaznamInd = -1;
+	char front[10];
+	char back[51];
+	memset(&front, 0, sizeof(front));
+	memset(&back, 0, sizeof(back));
+	int length;
+	int naselZnacku = 0;//bool
+	for(int i = 0; i < z.length; i++)
+	{
+		if(z.msg[i] == '!')
+		{
+			naselZnacku = 1;
+			memcpy(back, &z.msg[i + 1], z.length - (i + 1));
+			break;
+		}
+		else
+		{
+			front[i] = z.msg[i];
+		}
+	}
+	if(naselZnacku == 0)
+	{
+		strcpy(k.msg, "V zadanem textu neni symbol '!'.\n");
+		k.length = strlen(k.msg);
+		k.error = 2;
+		return k;
+	}
+	printf("%s\n", front);
+	printf("%s\n", back);
+	
+	if(strcmp(front, "return") == 0)
+	{
+		int indH = -1;
+		for(int i = 0;i < length_hraci;i++)
+		{
+			if(hraci[i].init == 1 && hraci[i].client_socket == cl)
+			{
+				indH = i;
+				break;
+			}
+		}
+		if(indH == -1)
+		{
+			printf("Chyba, hrac nebyl nalezen v seznamu hracu!\n");
+			sprintf(k.msg, "$return!decline!5!#\n");
+			k.length = strlen(k.msg);
+			k.error = 5;
+			printf("%s", k.msg);
+			return k;
+		}
+		int indHracLobby = -1;//Pozice hrace v lobby <0,3>
+		int indL = -1;
+		for(int i = 0; i < length_lobbies; i++)
+		{
+			for(int j = 0; j < 4; j++)
+			{
+				if(lobbies[i].hraciLobby[j] == indH)
+				{
+					indHracLobby = j;
+					indL = i;
+					break;
+				}
+			}
+		}
+		if(indL == -1)
+		{
+			printf("Chyba, hrac se nenachazi v zadne lobby!\n");
+			sprintf(k.msg, "$return!decline!6!#\n");
+			k.length = strlen(k.msg);
+			k.error = 6;
+			printf("%s", k.msg);
+			return k;	
+		}
+		
+		hraci[indH].stav = 1;
+		lobbies[indL].hraciReady[indHracLobby] = 0;
+		
+		sprintf(k.msg, "$return!accept!#\n");
+		k.length = strlen(k.msg);
+		k.error = 0;
+		printf("%s", k.msg);
+		return k;
+	}
+	else if(strcmp(front, "discon") == 0)
+	{
+		int indH = -1;
+		for(int i = 0;i < length_hraci;i++)
+		{
+			if(hraci[i].init == 1 && hraci[i].client_socket == cl)
+			{
+				indH = i;
+				break;
+			}
+		}
+		if(indH == -1)
+		{
+			printf("Chyba, hrac nebyl nalezen v seznamu hracu!\n");
+			sprintf(k.msg, "$discon!decline!5!#\n");
+			k.length = strlen(k.msg);
+			k.error = 5;
+			printf("%s", k.msg);
+			return k;
+		}
+		int indHracLobby = -1;//Pozice hrace v lobby <0,3>
+		int indL = -1;
+		for(int i = 0; i < length_lobbies; i++)
+		{
+			for(int j = 0; j < 4; j++)
+			{
+				if(lobbies[i].hraciLobby[j] == indH)
+				{
+					indHracLobby = j;
+					indL = i;
+					break;
+				}
+			}
+		}
+		if(indL == -1)
+		{
+			printf("Chyba, hrac se nenachazi v zadne lobby!\n");
+			sprintf(k.msg, "$discon!decline!6!#\n");
+			k.length = strlen(k.msg);
+			k.error = 6;
+			printf("%s", k.msg);
+			return k;	
+		}
+		else
+		{
+			int returnValue = removePlayer(indH, indL);
+			if(returnValue >= 1)
+			{
+				sprintf(k.msg, "$discon!decline!7!#\n");
+				k.error = 7;
+			}
+			else
+			{
+				sprintf(k.msg, "$discon!accepted!#\n");
+				k.error = 100; 	
+			}	
+		}
+		k.length = strlen(k.msg);
+		printf("%s", k.msg);
+		return k;		
+	}
+	else
+	{
+		printf("Nic ze znamych parametru nesedi na |%s|\n", front);
+		k.error = 10;
+		k.length = strlen(k.msg);
+		return k;
+	}
 }
 
 //ZPracovani logicke zpravy od klienta, porovnani spravnosti
@@ -799,15 +1079,50 @@ struct Zprava rozdeleniZpravyHra(struct Zprava z, int cl)
 					list_games[indG].anotherRun = 0;
 					//Poslat zpravu o tom ze hrac ma hrat znovu 
 				}
-				if(znova == 1)
+				//Kontrola, jestli neni konec hry
+				int zbytek = 0;
+				int winInd = -1;
+				for(int b = 0; b < 4;b++)
 				{
-					sprintf(k.msg, "$game!again!#\n");
+					if(list_games[indG].penize[b] > 0)
+					{
+						zbytek++;
+						winInd = b;
+					}
+				}
+				if(zbytek <= 1)//Posledni hrac
+				{
+					//Nastavit vsem hracum v lobby, ze jsou ve stavu 3
+					for(int v = 0; v < 4; v++)
+					{
+						if(lobbies[indL].hraciLobby[v] != -1)
+						{
+							hraci[lobbies[indL].hraciLobby[v]].stav = 3;
+						}
+					}
+					
+					sprintf(k.msg, "$game!win!%s!#\n", list_games[indG].jmena[winInd]);
+					broadcastToGame(&list_games[indG], cl, k.msg);
+					
+					//Vymazat hru ze seznamu her
+					removeGame(indG);
+					k.error = 0;
+					k.length = strlen(k.msg);
+					printf("%s", k.msg);
+					return k;
 				}
 				else
 				{
-					sprintf(k.msg, "$game!end!#\n");		
+					if(znova == 1)
+					{
+						sprintf(k.msg, "$game!again!#\n");
+					}
+					else
+					{
+						sprintf(k.msg, "$game!end!#\n");		
+					}
+					k.error = 0;	
 				}
-				k.error = 0;
 			}
 			else if(ret == 1)
 			{
@@ -829,7 +1144,6 @@ struct Zprava rozdeleniZpravyHra(struct Zprava z, int cl)
 	}
 	else if(strcmp(front, "aukce") == 0)
 	{
-		printf("SEM uroven 0-1.\n");
 		char *e;
 		int indexI;
 		e = strchr(back, '!');
@@ -837,7 +1151,6 @@ struct Zprava rozdeleniZpravyHra(struct Zprava z, int cl)
 		char forbuff[10];
 		memcpy(forbuff, &back[0], indexI);
 		forbuff[indexI] = '\0';
-		printf("SEM uroven 0-2.\n");
 		if(strcmp(forbuff, "add") == 0)
 		{
 			char subbuff[10];
@@ -992,17 +1305,12 @@ struct Zprava rozdeleniZpravyHra(struct Zprava z, int cl)
 				printf("%s", k.msg);
 				return k;	
 			}
-			printf("SEM uroven 1.\n");
 			if(list_games[indG].aukce.auction == 1 && list_games[indG].aukce.aukceNatahu == indHracLobby)
 			{
-				printf("SEM uroven 2.\n");
 				makeActionPRUAuction(indHracLobby, indH, 0, -1, &list_games[indG]);
-				printf("SEM uroven 3.\n");
 				if(list_games[indG].aukce.auction == 2)
 				{
-					printf("SEM uroven 3-1.\n");
 					gameRulesPost(list_games[indG].natahu, lobbies[indL].hraciLobby[list_games[indG].natahu], &list_games[indG]);
-					printf("SEM uroven 3-2.\n");
 					int znova = 0;
 					if(list_games[indG].changeOfPlayers)
 					{
@@ -1027,7 +1335,6 @@ struct Zprava rozdeleniZpravyHra(struct Zprava z, int cl)
 					{
 						sprintf(k.msg, "$game!end!#\n");		
 					}
-					printf("SEM uroven 3-3.\n");
 					k.error = 0;
 					//!!
 					broadcastToLobby(lobbies[indL].hraciLobby, cl, k.msg);
@@ -1055,13 +1362,171 @@ struct Zprava rozdeleniZpravyHra(struct Zprava z, int cl)
 			return k;	
 		}	
 	}
-	else if(strcmp(front, "leave") == 0)
+	else if(strcmp(front, "leave") == 0 || strcmp(front, "discon") == 0)
 	{
-		//!!DODELAT
-	}
-	else if(strcmp(front, "discon") == 0)
-	{
-		//!!DODELAT
+		int indH = -1;
+		for(int i = 0;i < length_hraci;i++)
+		{
+			if(hraci[i].init == 1 && hraci[i].client_socket == cl)
+			{
+				indH = i;
+				break;
+			}
+		}
+		if(indH == -1)
+		{
+			printf("Chyba, hrac nebyl nalezen v seznamu hracu!\n");
+			sprintf(k.msg, "$%s!decline!5!#\n", front);
+			k.length = strlen(k.msg);
+			k.error = 5;
+			printf("%s", k.msg);
+			return k;
+		}
+		int indHracLobby = -1;//Pozice hrace v lobby <0,3>
+		int indL = -1;
+		for(int i = 0; i < length_lobbies; i++)
+		{
+			for(int j = 0; j < 4; j++)
+			{
+				if(lobbies[i].hraciLobby[j] == indH)
+				{
+					indHracLobby = j;
+					indL = i;
+					break;
+				}
+			}
+		}
+		if(indL == -1)
+		{
+			printf("Chyba, hrac se nenachazi v zadne lobby!\n");
+			sprintf(k.msg, "$%s!decline!6!#\n", front);
+			k.length = strlen(k.msg);
+			k.error = 6;
+			printf("%s", k.msg);
+			return k;	
+		}
+		int indG = -1;
+		for(int i = 0; i < length_list_games; i++)
+		{
+			if(lobbies[indL].idLobby == list_games[i].idLobby)
+			{
+				indG = i;
+				break;
+			}
+		}
+		if(indG == -1)
+		{
+			printf("Chyba, pro danou lobby neexistuje zadna hra!\n");
+			sprintf(k.msg, "$%s!decline!7!#\n", front);
+			k.length = strlen(k.msg);
+			k.error = 7;
+			printf("%s", k.msg);
+			return k;	
+		}
+		//Hrac odstranen ze hry
+		list_games[indG].anotherRun = 0;
+		memset(&list_games[indG].budovy[indHracLobby], '\0', sizeof(list_games[indG].budovy[indHracLobby]));
+		list_games[indG].changeOfPlayers = 0;//!!Nejsem si jist
+		list_games[indG].penize[indHracLobby] = -1;
+		list_games[indG].poziceHracu[indHracLobby] = -1;
+		memset(&list_games[indG].upgrady[indHracLobby], '\0', sizeof(list_games[indG].upgrady[indHracLobby]));
+		list_games[indG].vezeni[indHracLobby] = 0;
+		
+		//!!Mozna chyba s cenou, pokud by hrac co opousti nastavil moc velkou cenu,
+		//Tak zbyvajici hrac by na to prohral - musim vyzkouset
+		if(list_games[indG].aukce.auction == 1)
+		{
+			printf("LEAVE/DISCON GAME - hrac co je natahu v aukci odchazi!\n");
+			makeActionPRUAuctionAfterLeave(indHracLobby, indH, &list_games[indG]);	
+		}
+		
+		if(list_games[indG].natahu == indHracLobby)
+		{
+			printf("LEAVE/DISCON GAME - hrac co je natahu odchazi!\n");
+			list_games[indG].vezeniLuck[indHracLobby] = 0;
+			//Nastavit noveho hrace
+			list_games[indG].natahu++;
+			if(list_games[indG].natahu == 4)
+			{
+				list_games[indG].natahu = 0;
+			}
+			int nasel = 1;
+			while(nasel)
+			{
+				if(list_games[indG].penize[list_games[indG].natahu] <= 0)
+				{
+					list_games[indG].natahu++;
+					if(list_games[indG].natahu == 4)
+					{
+						list_games[indG].natahu = 0;
+					}
+				}
+				else
+				{
+					nasel = 0;
+				}
+			}
+			
+			
+			if(list_games[indG].jailFree == indHracLobby)
+			{
+				list_games[indG].jailFree = -1;
+			}
+			list_games[indG].hodStejnych = 0;	
+		}
+		//Zjistit, jestli nahodou uz neni posledni hrac ve hre,
+		//jinak poslat zpravu ze vyhral
+		int zbytek = 0;
+		int winInd = -1;
+		for(int i = 0; i < 4;i++)
+		{
+			if(list_games[indG].penize[i] > 0)
+			{
+				zbytek++;
+				winInd = i;
+			}
+		}
+		
+		//Odstraneni hrace z lobby
+		int zp = removePlayer(indH, indL);
+		//Nastavit hraci ze je ve stavu 1=menu
+		hraci[indH].stav = 1;
+		sprintf(k.msg, "$left!%s!#\n", hraci[indH].jmeno);
+		broadcastToGame(&list_games[indG], cl, k.msg);
+		if(zbytek <= 1)//Posledni hrac
+		{
+			//Nastavit vsem hracum v lobby, ze jsou ve stavu 3
+			for(int i = 0; i < 4; i++)
+			{
+				if(lobbies[indL].hraciLobby[i] != -1)
+				{
+					hraci[lobbies[indL].hraciLobby[i]].stav = 3;
+				}
+			}
+			
+			sprintf(k.msg, "$game!win!%s!#\n", list_games[indG].jmena[winInd]);
+			broadcastToGame(&list_games[indG], cl, k.msg);
+			
+			//Vymazat hru ze seznamu her
+			removeGame(indG);
+		}
+			
+		if(strcmp(front, "discon") == 0)	
+		{
+			sprintf(k.msg, "$discon!accept!#\n");
+			k.length = strlen(k.msg);
+			k.error = 100;
+			printf("%s", k.msg);
+			return k;
+		}
+		else
+		{
+			sprintf(k.msg, "$leave!accept!#\n");
+			k.length = strlen(k.msg);
+			k.error = 0;
+			printf("%s", k.msg);
+			return k;	
+		}
 	}
 	else
 	{
@@ -1099,7 +1564,7 @@ void *serve_request(void *arg)
 	memset(&jmeno, 0, sizeof(jmeno));	
 	z = rozdeleniZprav(z);
 	
-	if(z.zaznamInd > -1)
+	if(z.zaznamInd > -1)//Ziskani jmena hrace co se pripojil
 	{
 		for(int i = 0; i < strlen(whitelist[z.zaznamInd]); i++)
 		{
@@ -1127,6 +1592,8 @@ void *serve_request(void *arg)
 		while(1)
 		{
 			z = getMessage(client_socket);
+			printf("Zprava zpracovana - ");
+			printf("erorr: %d\n", z.error);
 			if(z.error == 0)
 			{
 				printf("\nPrijato: %s\n", z.msg);
@@ -1173,6 +1640,22 @@ void *serve_request(void *arg)
 				{
 					printf("Hrac je ve 2. stavu!\n");
 					z = rozdeleniZpravyHra(z, client_socket);
+					printf("k.error: %d\n", z.error);
+					if(z.error < 5)
+					{
+						send(client_socket, &z.msg, strlen(z.msg), 0);
+					}
+					else if(z.error == 100)
+					{
+						printf("[%s]: se odpojil od serveru.\n", jmeno);
+						break;
+					}
+					printf("vracime se zpet na cteni od klienta!\n");
+				}
+				else if(hraci[getHracIndex(client_socket)].stav == 3)//end game
+				{
+					printf("Hrac je ve 3. stavu!\n");
+					z = rozdeleniZpravyEnd(z, client_socket);
 					printf("k.error: %d\n", z.error);
 					if(z.error < 5)
 					{

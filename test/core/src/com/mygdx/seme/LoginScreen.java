@@ -17,7 +17,6 @@ import com.badlogic.gdx.math.Vector3;
 
 public class LoginScreen implements Screen, InputProcessor
 {
-	Message [] bufferSend;
 	static int indBuff = 0;
 	
 	TestClient tc;
@@ -42,13 +41,7 @@ public class LoginScreen implements Screen, InputProcessor
 	static boolean register = false;
 	
 	public LoginScreen(Monopoly mono)
-	{
-		bufferSend = new Message[5];
-		for(int i = 0; i < bufferSend.length; i++)
-		{
-			bufferSend[i] = new Message(null, null);
-		}
-		
+	{	
 		this.game = mono;
 		rand = new Random();
 		font = new BitmapFont(Gdx.files.internal("font/Stelar-Regular-final.fnt"), false);
@@ -60,16 +53,6 @@ public class LoginScreen implements Screen, InputProcessor
 		batch = new SpriteBatch();
 		sr = new ShapeRenderer();
         touch = new Vector3();
-	}
-	
-	public void sendToThread(String type, String data)
-	{
-		synchronized(bufferSend[indBuff])
-		{
-			bufferSend[indBuff].setMessage(type, data);
-			bufferSend[indBuff].notify();
-			indBuff++;
-		}
 	}
 	
 	@Override
@@ -177,14 +160,17 @@ public class LoginScreen implements Screen, InputProcessor
 			if(isObjectTouched(touch, widthSpace + widthEdBut, heightSpace + heightA - heightEdgeY - heightButton, widthButton, heightButton))
 			{
 				//LOGIN CLIENTA
+				tc.typeLogin = 0;
 				new Thread(tc, "CLIENT CONNECTION AND SENDING").start();
 				clickDelay = 50;
 			}
 			if(isObjectTouched(touch, widthSpace + 2 * widthEdBut + widthButton, heightSpace + heightA - heightEdgeY - heightButton, widthButton, heightButton))
 			{
-				//REGISTER CLIENTA, momentalne preskoceni rovnou do hry, ktera je singleplayer
+				//REGISTER CLIENTA
 				System.out.println("GUI Register");
-				game.setScreen(Monopoly.GameScreen);
+				tc.typeLogin = 1;
+				new Thread(tc, "CLIENT CONNECTION AND SENDING").start();
+				//game.setScreen(Monopoly.GameScreen);
 				clickDelay = 50;
 			}
 		}
@@ -217,19 +203,19 @@ public class LoginScreen implements Screen, InputProcessor
 	@Override
 	public void pause()
 	{
-
+		
 	}
 	
 	@Override
 	public void resume()
 	{
-
+		
 	}
 	
 	@Override
 	public void hide()
 	{
-
+		
 	}
 	
 	@Override

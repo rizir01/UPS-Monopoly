@@ -799,6 +799,95 @@ void makeActionPRUAuction(int index, int indexHrace, int typOdpovedi, int castka
 	}
 }
 
+int makeActionPRUAuctionAfterLeave(int index, int indexHrace, struct Game* hra)
+{
+	char t[50];
+	
+	hra->aukce.auctionPrice[index] = -1;
+	hra->aukce.peopleDone++;
+	memset(&t, '\0', sizeof(t));
+	strcpy(t, "$game!aukce!done!#\n");
+	broadcastToAllGame(hra, t);
+	//TRANSMISSION!!!
+	//Table.transmission("a!k!");
+	//TRANSMISSION!!!
+	
+	if(hra->aukce.peopleDone >= hra->aukce.pocetHrajicich - 1)
+	{
+		hra->aukce.auction = 0;
+	}
+	else
+	{
+		hra->aukce.aukceNatahu++;
+		if(hra->aukce.aukceNatahu == 4)
+		{
+			hra->aukce.aukceNatahu = 0;
+		}
+		memset(&t, '\0', sizeof(t));
+		strcpy(t, "$game!aukce!next!#\n");
+		broadcastToAllGame(hra, t);
+		int nasel = 1;
+		while(nasel)
+		{
+			if(hra->aukce.auctionPrice[hra->aukce.aukceNatahu] == -1)
+			{
+				if(hra->penize[hra->aukce.aukceNatahu] > 0)
+				{
+					//Poslat ze ma skocit na dalsiho hrace
+					memset(&t, '\0', sizeof(t));
+					strcpy(t, "$game!aukce!next!#\n");
+					broadcastToAllGame(hra, t);
+					//TRANSMISSION!!!
+					//Table.transmission("a!n!");
+					//TRANSMISSION!!!
+				}
+				hra->aukce.aukceNatahu++;
+				if(hra->aukce.aukceNatahu == 4)
+				{
+					hra->aukce.aukceNatahu = 0;
+				}
+			}
+			else
+			{
+				nasel = 0;
+			}
+		}	
+	}
+	
+	//Pokud uz je aukce kompletni, provest detekci kdo pozemek ziskal
+	//a nasledne mu privlastnit tento pozemek	
+	if(hra->aukce.auction == 0)
+	{
+		int index3 = -1;
+		for(int i = 0; i < 4; i++)
+		{
+			if(hra->aukce.auctionPrice[i] != -1)
+			{
+				index3 = i;
+			}
+		}
+		printf("%s ziskal stredisko z aukce za %d.\n", hra->jmena[index3], hra->aukce.auctionPrice[index3]);
+		hra->penize[index3] -= hra->aukce.auctionPrice[index3];
+		sprintf(hra->budovy[index3], "%s%d,", hra->budovy[index3], hra->aukce.pozice);
+		sprintf(hra->upgrady[index3], "%s0,", hra->upgrady[index3]);
+		memset(&t, '\0', sizeof(t));
+		sprintf(t, "$game!aukce!end!#\n");
+		broadcastToAllGame(hra, t);
+		memset(&t, '\0', sizeof(t));
+		sprintf(t, "$game!pay!%d!%d!#\n", index3, hra->aukce.auctionPrice[index3]);
+		broadcastToAllGame(hra, t);
+		memset(&t, '\0', sizeof(t));
+		sprintf(t, "$game!buy!%d!%d!#\n", index3, hra->aukce.pozice);
+		broadcastToAllGame(hra, t);
+		hra->aukce.auction = 2;
+		//TRANSMISSION!!!
+		//Table.transmission("p!" + index + "!" + auctionPrice[index] + "!");
+		//Table.transmission("b!"+ index + "!" + hrac.getPosition() + "!");
+		//TRANSMISSION!!!
+	}
+	return 0;
+}
+
 int makeActionPRU(int index, int indexHrace, int pozice, struct Game* hra)
 {
 	int typPoz = game_board[pozice].typPozemku;
@@ -1256,7 +1345,7 @@ void makeActionChance(int index, int indexHrace, int pozice, struct Game* hra)
 			 //TRANSMISSION!!!
 			 //Table.transmission("c!" + whatToDo + "!");
 			 //TRANSMISSION!!!
-			 makeAction(index, indexHrace, hra->poziceHracu[index], hra);
+			 //makeAction(index, indexHrace, hra->poziceHracu[index], hra);
 			 break;
 	case 'j':if(whatToDo[1] == 'i')
 			 {
@@ -1290,7 +1379,7 @@ void makeActionChance(int index, int indexHrace, int pozice, struct Game* hra)
 			 //TRANSMISSION!!!
 			 //Table.transmission("c!" + whatToDo + "!");
 			 //TRANSMISSION!!!
-			 makeAction(index, indexHrace, hra->poziceHracu[index], hra);
+			 //makeAction(index, indexHrace, hra->poziceHracu[index], hra);
 			 break;
 	case 't':memset(&subbuff, '\0', sizeof(subbuff));
 	         memcpy(subbuff, &whatToDo[1], strlen(whatToDo) - 1);
@@ -1332,7 +1421,7 @@ void makeActionChance(int index, int indexHrace, int pozice, struct Game* hra)
 		     //TRANSMISSION!!!
 		     //Table.transmission("c!" + whatToDo + "!");
 		     //TRANSMISSION!!!
-		     makeAction(index, indexHrace, hra->poziceHracu[index], hra);
+		     //makeAction(index, indexHrace, hra->poziceHracu[index], hra);
 		     break;
 	case 'r':ind = hra->poziceHracu[index];
 			 for(int i = ind + 1; i < 40; i++)
@@ -1360,7 +1449,7 @@ void makeActionChance(int index, int indexHrace, int pozice, struct Game* hra)
 		     //TRANSMISSION!!!
 		     //Table.transmission("c!" + whatToDo + "!");
 		     //TRANSMISSION!!!
-		     makeAction(index, indexHrace, hra->poziceHracu[index], hra);
+		     //makeAction(index, indexHrace, hra->poziceHracu[index], hra);
 		     break;
 	case 'h':memset(&subbuff, '\0', sizeof(subbuff));
 	         memcpy(subbuff, &whatToDo[1], strlen(whatToDo) - 1);

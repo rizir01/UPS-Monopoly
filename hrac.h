@@ -10,7 +10,7 @@ struct Hrac
 	
 	//Promena, ktera definuje v jakem stavu(oblasti) se hrac nachazi, pr. menu s lobby, lobby, hra atd.
 	//A pak take v jakem stavu primo ve hre, pr. hazeni kostkou, nakup nemovitosti, aukce atd.
-	//1=menu lobby, 2=hra,
+	//1=menu lobby, 2=hra, 3=endgame
 	int stav;
 	
 	//ID hrace prirazene serverem
