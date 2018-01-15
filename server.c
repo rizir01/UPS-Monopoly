@@ -341,6 +341,21 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z, int cl)
 			}
 			else
 			{
+				strcat(textK, "!");	
+			}
+		}
+		//Jestli je lobby zamkla
+		for(int i = 0;i < length_lobbies; i++)
+		{
+			char z[1];
+			sprintf(z, "%d", lobbies[i].isLocked);
+			strcat(textK, z);
+			if(i + 1 < length_lobbies)
+			{
+				strcat(textK, ",");		
+			}
+			else
+			{
 				strcat(textK, "!#\n");	
 			}
 		}
@@ -676,6 +691,7 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z, int cl)
 				
 				//PRIDANI NOVE HRY
 				int bi = addGame(lobbies[indL].idLobby);
+				lobbies[indL].isLocked = 1;
 				printf("pocetHracu ve hre: %d\n", lobbies[indL].pocetHracu);
 				int za = lobbies[indL].pocetHracu;
 				for(int m = 0; m < 4; m++)
@@ -1109,6 +1125,7 @@ struct Zprava rozdeleniZpravyHra(struct Zprava z, int cl)
 					
 					//Vymazat hru ze seznamu her
 					removeGame(indG);
+					lobbies[indL].isLocked = 0;
 					k.error = 0;
 					k.length = strlen(k.msg);
 					printf("%s", k.msg);
@@ -1512,6 +1529,7 @@ struct Zprava rozdeleniZpravyHra(struct Zprava z, int cl)
 			
 			//Vymazat hru ze seznamu her
 			removeGame(indG);
+			lobbies[indL].isLocked = 0;
 		}
 			
 		if(strcmp(front, "discon") == 0)	

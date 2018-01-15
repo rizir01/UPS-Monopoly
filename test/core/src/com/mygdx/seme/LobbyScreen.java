@@ -204,8 +204,11 @@ public class LobbyScreen implements Screen, InputProcessor
 				{
 					if(selectedLobby == i)
 					{
-						renderLobbyInfo(x, y, 500, 100, lobbies[i].lobbyName, lobbies[i].getPocetHracuRefresh(), Color.RED);					
-						drawButton(x + 400, y + 10, 80, 75, "JOIN");
+						renderLobbyInfo(x, y, 500, 100, lobbies[i].lobbyName, lobbies[i].getPocetHracuRefresh(), Color.RED);
+						if(!lobbies[i].isLocked())
+						{
+							drawButton(x + 400, y + 10, 80, 75, "JOIN");							
+						}
 					}
 					else
 					{
@@ -414,10 +417,13 @@ public class LobbyScreen implements Screen, InputProcessor
 			{
 				if(isObjectTouched(touch, slideX + 400, (slideY + (130*selectedLobby)) + 10, 80, 75))
 				{
-					//Monopoly.LoginScreen.sendToThread("GUI", "$join!" + selectedLobby + "#");
-					Monopoly.LoginScreen.tc.sendMessageToServer("$join!" + selectedLobby + "#");
-					selectedLobbyName = false;
-					buttonClickDelay = 25;
+					if(!lobbies[selectedLobby].isLocked())
+					{
+						//Monopoly.LoginScreen.sendToThread("GUI", "$join!" + selectedLobby + "#");
+						Monopoly.LoginScreen.tc.sendMessageToServer("$join!" + selectedLobby + "#");
+						selectedLobbyName = false;
+						buttonClickDelay = 25;						
+					}
 				}				
 			}
 			if(!drawAllInfo && isObjectTouched(touch, 595, 110, 310, 50)  && !slideClicked)//Oblast pro vykresleni nazvu lobby
@@ -429,7 +435,7 @@ public class LobbyScreen implements Screen, InputProcessor
 			{
 				if(lobbyName.length() < 1 || lobbyName.length() > 8)
 				{
-					System.out.println("Nazev lobby musi byt mezi <1,8>");
+					System.out.println("Nazev lobby musi byt mezi <1,8> znaky!");
 				}
 				else
 				{

@@ -212,13 +212,25 @@ public class TestClient extends Thread
 			String [] pole = Assets.separeter(back, '!');
 			String [] nazvyLobbyin = Assets.separeter(pole[1], ',');
 			String [] lobbyLidi = Assets.separeter(pole[2], ',');
+			String [] lockLob = Assets.separeter(pole[3], ',');
 			int pocetLobbyin = Integer.parseInt(pole[0]);//Pocet lobbyin
+			int l;
 			if(LobbyScreen.lobbies == null)
 			{
 				LobbyScreen.lobbies = new Lobby[pocetLobbyin];
 				for(int i = 0; i < pocetLobbyin; i++)
 				{
-					LobbyScreen.lobbies[i] = new Lobby(nazvyLobbyin[i]);//Nazev konkretni lobby
+					try
+					{
+						l = Integer.parseInt(lockLob[i]);						
+					}
+					catch(NumberFormatException nfe)
+					{
+						System.out.println("Predane paramtery pro lock lobby jsou spatne zadane \n"
+								+ Arrays.toString(lockLob));
+						return 1;
+					}
+					LobbyScreen.lobbies[i] = new Lobby(nazvyLobbyin[i], l);//Nazev konkretni lobby
 					LobbyScreen.lobbies[i].setPocetHracu(Integer.parseInt(lobbyLidi[i]));//Pocet hracu v konkretni lobby
 				}
 			}
@@ -227,14 +239,23 @@ public class TestClient extends Thread
 				Lobby [] noveLobby = new Lobby[pocetLobbyin];
 				for(int i = 0; i < noveLobby.length; i++)
 				{
-					noveLobby[i] = new Lobby(nazvyLobbyin[i]);//Nazev konkretni lobby
+					try
+					{
+						l = Integer.parseInt(lockLob[i]);						
+					}
+					catch(NumberFormatException nfe)
+					{
+						System.out.println("Predane paramtery pro lock lobby jsou spatne zadane \n"
+								+ Arrays.toString(lockLob));
+						return 1;
+					}
+					noveLobby[i] = new Lobby(nazvyLobbyin[i], l);//Nazev konkretni lobby
 					noveLobby[i].setPocetHracu(Integer.parseInt(lobbyLidi[i]));//Pocet hracu v konkretni lobby 
 				}
 				LobbyScreen.lobbies = noveLobby;
 			}
 			float delkaLobbyin = LobbyScreen.lobbies.length * 130;
 			float pomer = 520 / delkaLobbyin;
-			System.out.println(pomer);
 			if(pomer < 1)
 			{
 				LobbyScreen.slideBarHeight = 520 * pomer;				
@@ -253,7 +274,7 @@ public class TestClient extends Thread
 				{
 					noveLobby[i] = LobbyScreen.lobbies[i];
 				}
-				noveLobby[pocetLobbyin] = new Lobby(Monopoly.LobbyScreen.lobbyName);
+				noveLobby[pocetLobbyin] = new Lobby(Monopoly.LobbyScreen.lobbyName, 0);
 				LobbyScreen.lobbies = noveLobby;
 				
 				//Priradit do nove vytvorene lobby hrace, ktery zavolal create
@@ -787,27 +808,9 @@ public class TestClient extends Thread
 	@Override
 	public void run()
 	{
-		/*
-		System.out.print("Zadejte IP serveru:");
-		String ip = sc.nextLine();
-		
-		System.out.print("Zadejte port:");
-		int port = 0;
 		try
 		{
-			port = Integer.parseInt(sc.nextLine());			
-		}
-		catch(NumberFormatException n)
-		{
-			System.out.println("Spatne zadany parametr pro port na server!");
-			System.out.println("EXIT");
-			System.exit(1);
-		}
-		*/
-		
-		try
-		{
-			socket = new Socket("localhost" , 8192);
+			socket = new Socket(Monopoly.host, Monopoly.port);
 			InetAddress adresa = socket.getInetAddress();
 			System.out.println("Pripojuju se na : "+adresa.getHostAddress()+" se jmenem : "+adresa.getHostName());
 			

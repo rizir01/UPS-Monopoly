@@ -8,6 +8,15 @@ public class Monopoly extends Game
 	public static LoginScreen LoginScreen;
 	public static LobbyScreen LobbyScreen;
 	public static EndScreen EndScreen;
+	
+	public static String host;//IP adresa serveru
+	public static int port;//Port serveru
+	
+	public Monopoly(String ht, int pt)
+	{
+		host = ht;
+		port = pt;
+	}
 
 	@Override
 	public void create()

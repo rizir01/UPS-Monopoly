@@ -18,6 +18,11 @@ struct Lobby
 	//Pocet hracu v lobby
 	int pocetHracu;
 	
+	//Pokud jsou hraci ve hre, tak lobby
+	//se musi uzamknout
+	//0-unlocked, 1=locked
+	int isLocked;
+	
 	//ID lobby
 	int idLobby;
 };

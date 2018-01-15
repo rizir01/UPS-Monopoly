@@ -51,6 +51,7 @@ int initLobby()
 	strcpy(lobbies[0].lobbyName, "default");
 	lobbies[0].pocetHracu = 0;
 	lobbies[0].idLobby = id_plus_lobby++;
+	lobbies[0].isLocked = 0;
 	length_lobbies += 1;
 	
 	pthread_mutex_unlock(&lockLobby);
@@ -72,6 +73,7 @@ int addLobby(char *nazev)
 	memset(&lobbies[length_lobbies - 1].hraciReady, 0, sizeof(int) * 4);
 	memset(&lobbies[length_lobbies - 1].lobbyName, 0, sizeof(lobbies[length_lobbies - 1].lobbyName));
 	memcpy(lobbies[length_lobbies - 1].lobbyName, nazev, sizeof(nazev));
+	lobbies[length_lobbies - 1].isLocked = 0;
 	
 	pthread_mutex_unlock(&lockLobby);
 	return 0;			
@@ -105,6 +107,7 @@ struct Lobby* boostLobby()
 		moreLobbies[i].idLobby = lobbies[i].idLobby;
 		moreLobbies[i].pocetHracu = lobbies[i].pocetHracu;
 		moreLobbies[i].idLobby = lobbies[i].idLobby;
+		moreLobbies[i].isLocked = lobbies[i].isLocked;
 	}
 	
 	moreLobbies[length_lobbies].pocetHracu = 0;
@@ -131,6 +134,7 @@ struct Lobby* reduceLobby(int index)
 			lessLobbies[j].idLobby = lobbies[i].idLobby;
 			lessLobbies[j].pocetHracu = lobbies[i].pocetHracu;
 			lessLobbies[j].idLobby = lobbies[i].idLobby;
+			lessLobbies[j].isLocked = lobbies[i].isLocked;
 			j++;	
 		}
 	}
@@ -162,6 +166,13 @@ int addPlayer(int indexHrac, int indexLobby)
 		return 2;
 	}
 	pthread_mutex_lock(&lockLobby);
+	if(lobbies[indexLobby].isLocked == 1)
+	{
+		pthread_mutex_unlock(&lockLobby);
+		printf("[ADD]Tato lobby uz hraje hru, nelze se pripojit!");
+		return 3;
+	}
+	
 	
 	int nasel = 0;//bool
 	for(int i = 0; i < 4; i++)

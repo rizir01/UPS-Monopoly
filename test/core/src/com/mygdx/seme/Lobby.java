@@ -10,14 +10,17 @@ public class Lobby
 	
 	private int pocetHracu;
 	
+	private int locked;
+	
 	String lobbyName;
 	
-	public Lobby(String name)
+	public Lobby(String name, int lock)
 	{
 		lobbyName = name;
 		pocetHracu = 0;
 		hraci = new String[4];
 		ready = new boolean[4];
+		locked = lock;
 	}
 
 	public void addPlayer(String jmeno)
@@ -173,5 +176,17 @@ public class Lobby
 	public void setReady(boolean[] ready)
 	{
 		this.ready = ready;
+	}
+	
+	public boolean isLocked()
+	{
+		if(locked == 1)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
 	}
 }
