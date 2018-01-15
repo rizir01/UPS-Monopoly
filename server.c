@@ -1126,6 +1126,13 @@ struct Zprava rozdeleniZpravyHra(struct Zprava z, int cl)
 					//Vymazat hru ze seznamu her
 					removeGame(indG);
 					lobbies[indL].isLocked = 0;
+					
+					//Nastavit vsem hracum v lobby ready =0
+					for(int p; p < 4; p++)
+					{
+						lobbies[indL].hraciReady[p] = 0;
+					}
+					
 					k.error = 0;
 					k.length = strlen(k.msg);
 					printf("%s", k.msg);
@@ -1530,6 +1537,12 @@ struct Zprava rozdeleniZpravyHra(struct Zprava z, int cl)
 			//Vymazat hru ze seznamu her
 			removeGame(indG);
 			lobbies[indL].isLocked = 0;
+			
+			//smazani vsech ready na nulu
+			for(int p; p < 4; p++)
+			{
+				lobbies[indL].hraciReady[p] = 0;
+			}
 		}
 			
 		if(strcmp(front, "discon") == 0)	

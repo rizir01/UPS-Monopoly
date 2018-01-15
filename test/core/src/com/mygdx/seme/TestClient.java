@@ -217,7 +217,7 @@ public class TestClient extends Thread
 			int l;
 			if(LobbyScreen.lobbies == null)
 			{
-				LobbyScreen.lobbies = new Lobby[pocetLobbyin];
+				Lobby [] nove = new Lobby[pocetLobbyin];
 				for(int i = 0; i < pocetLobbyin; i++)
 				{
 					try
@@ -230,9 +230,10 @@ public class TestClient extends Thread
 								+ Arrays.toString(lockLob));
 						return 1;
 					}
-					LobbyScreen.lobbies[i] = new Lobby(nazvyLobbyin[i], l);//Nazev konkretni lobby
-					LobbyScreen.lobbies[i].setPocetHracu(Integer.parseInt(lobbyLidi[i]));//Pocet hracu v konkretni lobby
+					nove[i] = new Lobby(nazvyLobbyin[i], l);//Nazev konkretni lobby
+					nove[i].setPocetHracu(Integer.parseInt(lobbyLidi[i]));//Pocet hracu v konkretni lobby
 				}
+				LobbyScreen.lobbies = nove;
 			}
 			else
 			{
