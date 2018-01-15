@@ -34,10 +34,18 @@ public class LobbyScreen implements Screen, InputProcessor
 	//Slide lobby parameters
 	float slideX = 30;//pozice pozcatku lobbyin
 	float slideY = 30;
-	float slideBarX = 550;
+	float prevSlideY;
+	float slideBarX = 542.5f;
 	float slideBarY = 30;
-	float slideBarWidth = 30;
-	float slideBarHeight;
+	float prevSlideBarY;
+	static float slideBarWidth = 20;
+	static float slideBarHeight = 520;
+	
+	//Mouseclick
+	float prevY;
+	float currY;
+	boolean slideClicked = false;
+	
 	
 	static int width = Gdx.graphics.getWidth();
 	static int height = Gdx.graphics.getHeight();
@@ -172,7 +180,14 @@ public class LobbyScreen implements Screen, InputProcessor
 				y += 100 + 30; 
 			}
 			drawButton(260, height - 105, 200, 75, "LEAVE");
-			drawButton(730, height - 105, 200, 75, "READY");
+			if(ready)
+			{
+				drawButton(730, height - 105, 200, 75, "UNREADY");
+			}
+			else
+			{
+				drawButton(730, height - 105, 200, 75, "READY");				
+			}
 			if(countDown)
 			{
 				drawText(580, 85, "" + (int)(15 -(System.currentTimeMillis() - timeC) * 0.001), Color.BLUE);
@@ -182,6 +197,7 @@ public class LobbyScreen implements Screen, InputProcessor
 		{
 			x = slideX;
 			y = slideY;
+			
 			if(lobbies != null)
 			{
 				for(int i = 0; i < lobbies.length; i++)
@@ -197,6 +213,15 @@ public class LobbyScreen implements Screen, InputProcessor
 					}
 					y += 100 + 30; 
 				}
+				//Vykreslit kusy bilych platen, aby se zakryly lobby
+				sr.begin(ShapeType.Filled);
+					sr.setColor(Color.WHITE);
+					sr.rect(0, height, 960, -29);//Vrchni cast
+					sr.rect(0, height - 550, 960, -200);//Spodni cast
+				sr.end();
+				
+				//Vykreslit rollBar
+				drawRollBar();
 			}
 			drawButton(860, 620, 75, 75, "REF.");
 			
@@ -247,6 +272,21 @@ public class LobbyScreen implements Screen, InputProcessor
 					font.draw(batch, "READY", x + 450, (height - y) - spaceTextY);
 				}
 			batch.end();
+		sr.end();
+	}
+	
+	public void drawRollBar()
+	{
+		//SlideBar
+		sr.begin(ShapeType.Filled);
+			sr.setColor(Color.LIGHT_GRAY);
+			sr.rect(slideBarX, height - slideBarY, slideBarWidth, -slideBarHeight);
+		sr.end();
+		sr.begin(ShapeType.Line);
+			sr.setColor(Color.BLACK);
+			sr.rect(slideBarX, height - slideBarY, slideBarWidth, -slideBarHeight);
+			//Ohraniceni slideBaru pri 100% pokryti
+			sr.rect(542.5f, height - 30, slideBarWidth, -520);
 		sr.end();
 	}
 	
@@ -332,10 +372,10 @@ public class LobbyScreen implements Screen, InputProcessor
 		{
 			//Kontrola stisknuti nejake lobby a vraceni indexu lobby do hodnoty
 			boolean praveNasel = false;
-			if(lobbies != null && !drawAllInfo )//&& selectedLobby == -1
+			if(lobbies != null && !drawAllInfo  && !slideClicked)//&& selectedLobby == -1
 			{
-				float x = 30;
-				float y = 30;
+				float x = slideX;
+				float y = slideY;
 				boolean nenasel = true;
 				for(int i = 0; i < lobbies.length; i++)
 				{
@@ -362,7 +402,7 @@ public class LobbyScreen implements Screen, InputProcessor
 			}
 			
 			//Kontrola jestli nejake z tlacitek nebylo spusteno
-			if(isObjectTouched(touch, 30, height - 105, 200, 75))//DISCONNECT
+			if(isObjectTouched(touch, 30, height - 105, 200, 75) && !slideClicked)//DISCONNECT
 			{
 				//Monopoly.LoginScreen.sendToThread("GUI", "$discon!0#");
 				selectedLobbyName = false;
@@ -370,9 +410,9 @@ public class LobbyScreen implements Screen, InputProcessor
 				game.setScreen(Monopoly.LoginScreen);
 				
 			}
-			if(selectedLobby != -1 && !praveNasel && !drawAllInfo)//JOIN
+			if(selectedLobby != -1 && !praveNasel && !drawAllInfo  && !slideClicked)//JOIN
 			{
-				if(isObjectTouched(touch, 30 + 400, (30 + (130*selectedLobby)) + 10, 80, 75))
+				if(isObjectTouched(touch, slideX + 400, (slideY + (130*selectedLobby)) + 10, 80, 75))
 				{
 					//Monopoly.LoginScreen.sendToThread("GUI", "$join!" + selectedLobby + "#");
 					Monopoly.LoginScreen.tc.sendMessageToServer("$join!" + selectedLobby + "#");
@@ -380,12 +420,12 @@ public class LobbyScreen implements Screen, InputProcessor
 					buttonClickDelay = 25;
 				}				
 			}
-			if(!drawAllInfo && isObjectTouched(touch, 595, 110, 310, 50))//Oblast pro vykresleni nazvu lobby
+			if(!drawAllInfo && isObjectTouched(touch, 595, 110, 310, 50)  && !slideClicked)//Oblast pro vykresleni nazvu lobby
 			{
 				selectedLobbyName = true;
 				buttonClickDelay = 25;
 			}
-			if(!drawAllInfo && isObjectTouched(touch, 687.5f, 200, 125, 50))//Create lobby
+			if(!drawAllInfo && isObjectTouched(touch, 687.5f, 200, 125, 50)  && !slideClicked)//Create lobby
 			{
 				if(lobbyName.length() < 1 || lobbyName.length() > 8)
 				{
@@ -397,11 +437,40 @@ public class LobbyScreen implements Screen, InputProcessor
 				}
 				buttonClickDelay = 25;
 			}
-			if(!drawAllInfo && isObjectTouched(touch, 860, 620, 75, 75))
+			if(!drawAllInfo && isObjectTouched(touch, 860, 620, 75, 75) && !slideClicked)
 			{
 				refreshDelay = 10000;
 				Monopoly.LoginScreen.tc.sendMessageToServer("$refresh!0#");
 				buttonClickDelay = 25;
+			}
+			if(!drawAllInfo && (isObjectTouched(touch, slideBarX, slideBarY, slideBarWidth, slideBarHeight) || slideClicked))
+			{
+				if(slideClicked)
+				{
+					currY = Gdx.input.getY();
+					float z = currY - prevY;
+					slideBarY = prevSlideBarY + z;//Posunout slideBar
+					if(slideBarY + slideBarHeight >= 550)//30 + 520
+					{
+						slideBarY = 550 - slideBarHeight;
+						
+					}
+					else if(slideBarY <= 30)
+					{
+						slideBarY = 30;
+					}
+					else
+					{
+						slideY = prevSlideY - z * (lobbies.length * 130 / 520.0f);
+					}
+				}
+				else
+				{
+					prevSlideY = slideY;
+					prevSlideBarY = slideBarY;
+					prevY = Gdx.input.getY();
+					slideClicked = true;
+				}
 			}
 			
 			if(drawAllInfo)//Jestli jsem v konkretni lobby
@@ -411,6 +480,8 @@ public class LobbyScreen implements Screen, InputProcessor
 					//Monopoly.LoginScreen.sendToThread("GUI", "$leave!0#");
 					Monopoly.LoginScreen.tc.sendMessageToServer("$leave!0#");
 					Monopoly.LobbyScreen.lobbies[selectedLobby].removePlayer(LoginScreen.login);
+					slideBarY = 30;
+					slideY = 30;
 					drawAllInfo = false;
 					//selectedLobby = -1;
 					lobbyName = "";
@@ -434,6 +505,14 @@ public class LobbyScreen implements Screen, InputProcessor
 					ready = !ready;
 					buttonClickDelay = 25;
 				}
+			}
+		}
+		else
+		{
+			if(slideClicked)
+			{
+				slideClicked = false;
+				buttonClickDelay = 25;
 			}
 		}
 	}

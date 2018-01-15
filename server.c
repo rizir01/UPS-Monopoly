@@ -6,6 +6,7 @@
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 #include <pthread.h>
 #include "zprava.h"
 #include "hrac.h"
@@ -19,6 +20,8 @@ FILE *passwd;
 char** whitelist;
 //Pocet polozek ve whitelistu
 int listNum;
+//server socket
+int server_socket;
 
 void uvolniWhitelist()
 {
@@ -1692,6 +1695,28 @@ void *serve_request(void *arg)
 	return 0;
 }
 
+void signal_handler()
+{   
+    printf("\nCTRL-C ENDING\n");
+    if(server_socket) {
+        close(server_socket);
+    }
+    printf("SERVER SOCKET - uzavren\n");
+    
+    uvolniWhitelist();
+    printf("WHITELIST - uvolnen\n");
+	uvolniGameBoard();
+	printf("GAME_BOARD - uvolnen\n");
+	uvolniGames();
+	printf("GAMES - uvolnen\n");
+	uvolniLobby();
+	printf("LOBBY - uvolnen\n");
+	uvolniHrace();
+    printf("PLAYERS - uvolnen\n");
+    sleep(1);
+    exit(0);
+}
+
 
 int main (void)
 {
@@ -1706,7 +1731,7 @@ int main (void)
 	//NACTENI MAPY
 	setupGameBoard();
 	
-	int server_socket=0;
+	server_socket=0;
 	int client_socket=0;
 	int return_value=0;
 	
@@ -1726,6 +1751,8 @@ int main (void)
 	my_addr.sin_addr.s_addr = INADDR_ANY;
 	
 	return_value = bind(server_socket, (struct sockaddr *) &my_addr, sizeof(struct sockaddr_in));
+	signal(SIGPIPE, SIG_IGN);
+	signal(SIGINT, signal_handler);
 	
 	if(return_value == 0) 
 		printf("Bind - OK\n");

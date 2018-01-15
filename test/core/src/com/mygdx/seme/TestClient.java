@@ -232,6 +232,13 @@ public class TestClient extends Thread
 				}
 				LobbyScreen.lobbies = noveLobby;
 			}
+			float delkaLobbyin = LobbyScreen.lobbies.length * 130;
+			float pomer = 520 / delkaLobbyin;
+			System.out.println(pomer);
+			if(pomer < 1)
+			{
+				LobbyScreen.slideBarHeight = 520 * pomer;				
+			}
 			return 0;
 		}
 		else if(front.equals("create"))
@@ -258,6 +265,15 @@ public class TestClient extends Thread
 					LobbyScreen.lobbies[pocetLobbyin].addPlayer(LoginScreen.login);
 					Monopoly.LobbyScreen.currentLobby[i] = LoginScreen.login;
 				}
+				
+				float delkaLobbyin = LobbyScreen.lobbies.length * 130;
+				float pomer = 520 / delkaLobbyin;
+				System.out.println(pomer);
+				if(pomer < 1)
+				{
+					LobbyScreen.slideBarHeight = 520 * pomer;				
+				}
+				
 				LobbyScreen.drawAllInfo = true;
 			}
 			else if(input[0].equals("decline"))
