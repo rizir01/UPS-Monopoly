@@ -53,16 +53,17 @@ struct Zprava getMessage(int client_socket)//Monza pridelat stav erroru ($asda#a
 	}while(return_value > 0);
 	if(kon == 0 && zac == 0)
 	{
-		if(pole[0] != '0')
+		if(pole[0] == '0' || pole[0] == '\0')
 		{
-			printf("Zprava: |%s|\n", pole);	
+			printf("Zprava: |same nuly|\n");
+			p.error = 50;//Error pro spadnuti socketu	
 		}
 		else
 		{
-			printf("Zprava: |same nuly|\n");
+			printf("Zprava: |%s|\n", pole);
+			p.error = 2;
 		}
 		printf("zm: Spatny format zpravy (zprava neni mezi $ a #)!\n");
-		p.error = 2;
 		return p;
 	}
 	else if(kon == 0)

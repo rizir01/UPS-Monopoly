@@ -52,6 +52,7 @@ public class GameScreen implements Screen, InputProcessor
 	
 	public static Card [] screenTable = new Card[40];
 	public static Player [] screenHraci;
+	public static int [] skipHraci;
 	public static boolean startRound = true;
 	public static int pozice;
 	public static boolean notClick = false;
@@ -118,6 +119,8 @@ public class GameScreen implements Screen, InputProcessor
 		//Monopoly.LoginScreen.sendToThread("GUI", "$loaded!0#");
 		Monopoly.LoginScreen.tc.sendMessageToServer("$loaded!0#");
 		hide = false;
+		waiting = true;
+		/*
 		moneyDelay = new int[screenHraci.length];
 		lastThrow = new int[screenHraci.length][2];
 		for (int i = 0; i < lastThrow.length; i++)
@@ -126,6 +129,7 @@ public class GameScreen implements Screen, InputProcessor
 			lastThrow[i][1] = -1;
 		}
 		identifyPlayer();
+		*/
 	}
 
 	@Override
@@ -613,7 +617,7 @@ public class GameScreen implements Screen, InputProcessor
 		drawButton(765, 555, 150, 50, "LEAVE");
 		drawButton(765, 635, 150, 50, "DISCON");
 		
-		if(!notClick && delay == 0)
+		if(Gdx.input.isTouched() && delay == 0)
 		{
 			if(isObjectTouched(touch, 765, 555, 150, 50))
 			{
@@ -626,8 +630,10 @@ public class GameScreen implements Screen, InputProcessor
 			else if(isObjectTouched(touch, 765, 635, 150, 50))
 			{
 				System.out.println("DISCON");
-				//Discon se posle z funkce hide(); !
+				//Discon se posle z funkce hide();!
 				hide = false;
+				LobbyScreen.drawAllInfo = false;
+				LobbyScreen.ready = false;
 				game.setScreen(Monopoly.LoginScreen);
 				delaySet();
 			}
@@ -1068,14 +1074,6 @@ public class GameScreen implements Screen, InputProcessor
 					//Zprava, ze ukoncuji ucast na aukci
 					//Monopoly.LoginScreen.sendToThread("GUI", "$aukce!end!0#");
 					Monopoly.LoginScreen.tc.sendMessageToServer("$aukce!end!0#");
-					/*
-					try {
-						Monopoly.LoginScreen.rc.putMessage("G:$aukce!end!0#");
-					} catch (InterruptedException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					}
-					*/
 					//transmission("k");
 					notClick = true;
 					delaySet();
@@ -1231,6 +1229,7 @@ public class GameScreen implements Screen, InputProcessor
 	
 	public static void newStatus(String input)
 	{
+		System.out.println("Novy status " + input);
 		String [] vstup = Assets.separeter(input, '!');
 		//System.out.println("PRED SWITCHEM " + input);
 		switch(vstup[0].charAt(0))
@@ -1272,6 +1271,27 @@ public class GameScreen implements Screen, InputProcessor
 				 if(pozice >= screenHraci.length)
 				 {
 					 pozice = 0;
+				 }
+				 boolean nasel = true;
+				 while(nasel)
+				 {
+					 if(skipHraci[pozice] == 1)
+					 {
+						 pozice++;
+						 if(pozice >= screenHraci.length)
+						 {
+							 pozice = 0;
+						 }
+						 continue;
+					 }
+					 else if(pozice >= screenHraci.length)
+					 {
+						 pozice = 0;
+					 }
+					 else
+					 {
+						 nasel = false;
+					 }
 				 }
 				 startRound = true;
 				 // System.out.println("Pozice zmena z " + (pozice - 1) + " na " + pozice);
@@ -1424,19 +1444,17 @@ public class GameScreen implements Screen, InputProcessor
 				System.out.println("COMMUNITY CHEST - DONE");
 			    break;
 		case 'l':ind = Integer.parseInt(vstup[1]);
-				if(ind == intKlient)
-				{
-					intKlient = -1;
-				}
 				Player [] newHraci = new Player[screenHraci.length - 1];
+				int [] newSkip = new int[screenHraci.length - 1];
 				int [] newMoneyDelay = new int[moneyDelay.length - 1];
 				int [][] newThrow = new int[lastThrow.length - 1][2];
 				int j = 0;
-				for (int i = 0; i < newHraci.length; i++)
+				for(int i = 0; i < newHraci.length; i++)
 				{
 					if(i != ind)
 					{
 						newHraci[i] = screenHraci[j];
+						newSkip[i] = skipHraci[j];
 						newMoneyDelay[i] = moneyDelay[j];
 						newThrow[i][0] = lastThrow[j][0];
 						newThrow[i][1] = lastThrow[j][1];
@@ -1444,6 +1462,7 @@ public class GameScreen implements Screen, InputProcessor
 					else
 					{
 						newHraci[i] = screenHraci[++j];
+						newSkip[i] = skipHraci[j];
 						newMoneyDelay[i] = moneyDelay[j];
 						newThrow[i][0] = lastThrow[j][0];
 						newThrow[i][1] = lastThrow[j][1];
@@ -1451,13 +1470,46 @@ public class GameScreen implements Screen, InputProcessor
 					j++;
 				}
 				screenHraci = newHraci;
+				skipHraci = newSkip;
 				moneyDelay = newMoneyDelay;
 				lastThrow = newThrow;
 				
-				if(pozice >= screenHraci.length)
+				if(ind == intKlient)//Presmerovani indexu hrace po prohre
 				{
-				    pozice = 0;
+					intKlient = -1;
 				}
+				else
+				{
+					for(int i = 0; i < screenHraci.length; i++)
+					{
+						if(screenHraci[i].getName().equals(LoginScreen.login))
+						{
+							intKlient = i;
+						}
+					}
+				}
+				//Nastaveni indexu hrace natahu
+				boolean nasel2 = true;
+				 while(nasel2)
+				 {
+					 if(skipHraci[pozice] == 1)
+					 {
+						 pozice++;
+						 if(pozice >= screenHraci.length)
+						 {
+							 pozice = 0;
+						 }
+						 continue;
+					 }
+					 else if(pozice >= screenHraci.length)
+					 {
+						 pozice = 0;
+					 }
+					 else
+					 {
+						 nasel2 = false;
+					 }
+				 }
 			    break;
 		case 'c':zmenaPozice = false;
 				switch(vstup[1].charAt(0))
@@ -1631,7 +1683,7 @@ public class GameScreen implements Screen, InputProcessor
 		
 	}
 
-	public void identifyPlayer()
+	public static void identifyPlayer()
 	{
 		int ind = LobbyScreen.selectedLobby;
 		String [] hr = LobbyScreen.lobbies[ind].getHraci();
@@ -1670,6 +1722,7 @@ public class GameScreen implements Screen, InputProcessor
 			Monopoly.LoginScreen.tc.sendMessageToServer("$discon!0#");
 			try
 			{
+				Monopoly.LoginScreen.rc.fell = false;
 				Monopoly.LoginScreen.rc.join(10);
 				Monopoly.LoginScreen.tc.bf.close();
 				Monopoly.LoginScreen.tc.bw.close();

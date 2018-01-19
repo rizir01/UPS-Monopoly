@@ -23,7 +23,7 @@ struct Game
 	//MUSI SE UPRAVIT, JINAK DOJDE K PREPSANI INDEXU, MUZE JICH TOTIZ BYT VICE
 	int jailFree;
 	
-	//Z duvody problematiky zapozdreni a ziskani nazvu
+	//Z duvody problematiky zapouzdreni a ziskani nazvu
 	//konkretniho hrace je zde opet seznam jmen hracu
 	char jmena[4][50];
 	
@@ -35,6 +35,10 @@ struct Game
 	
 	//Pozice kazdeho hrace na mape
 	int poziceHracu[4];
+	
+	//Jestli nektery hrac neni aktivni,
+	//Jelikoz spadl z pripojeni a ceka se ze se pripojit
+	int skipHraci[4];
 	
 	//Kolik kdo ma penez
 	int penize[4];

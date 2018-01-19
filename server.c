@@ -127,6 +127,373 @@ int addMemberToWhitelist(char *record)
 	return 0;
 }
 
+struct Zprava leaveAndDiscon(int type, int cl)
+{
+	char front[50];
+	memset(&front, '\0', sizeof(front));
+	if(type == 0)//leave
+	{
+		sprintf(front, "leave");
+	}
+	else
+	{
+		sprintf(front, "discon");
+	}
+	struct Zprava k;
+	int indH = -1;
+	for(int i = 0;i < length_hraci;i++)
+	{
+		if(hraci[i].init == 1 && hraci[i].client_socket == cl)
+		{
+			indH = i;
+			break;
+		}
+	}
+	if(indH == -1)
+	{
+		printf("Chyba, hrac nebyl nalezen v seznamu hracu!\n");
+		sprintf(k.msg, "$%s!decline!5!#\n", front);
+		k.length = strlen(k.msg);
+		k.error = 5;
+		printf("%s", k.msg);
+		return k;
+	}
+	int indHracLobby = -1;//Pozice hrace v lobby <0,3>
+	int indL = -1;
+	for(int i = 0; i < length_lobbies; i++)
+	{
+		for(int j = 0; j < 4; j++)
+		{
+			if(lobbies[i].hraciLobby[j] == indH)
+			{
+				indHracLobby = j;
+				indL = i;
+				break;
+			}
+		}
+	}
+	if(indL == -1)
+	{
+		printf("Chyba, hrac se nenachazi v zadne lobby!\n");
+		sprintf(k.msg, "$%s!decline!6!#\n", front);
+		k.length = strlen(k.msg);
+		k.error = 6;
+		printf("%s", k.msg);
+		return k;	
+	}
+	int indG = -1;
+	for(int i = 0; i < length_list_games; i++)
+	{
+		if(lobbies[indL].idLobby == list_games[i].idLobby)
+		{
+			indG = i;
+			break;
+		}
+	}
+	if(indG == -1)
+	{
+		printf("Chyba, pro danou lobby neexistuje zadna hra!\n");
+		sprintf(k.msg, "$%s!decline!7!#\n", front);
+		k.length = strlen(k.msg);
+		k.error = 7;
+		printf("%s", k.msg);
+		return k;	
+	}
+	
+	//Hrac odstranen ze hry
+	list_games[indG].anotherRun = 0;
+	memset(&list_games[indG].budovy[indHracLobby], '\0', sizeof(list_games[indG].budovy[indHracLobby]));
+	list_games[indG].changeOfPlayers = 0;//!!Nejsem si jist
+	list_games[indG].penize[indHracLobby] = -1;
+	list_games[indG].poziceHracu[indHracLobby] = -1;
+	memset(&list_games[indG].upgrady[indHracLobby], '\0', sizeof(list_games[indG].upgrady[indHracLobby]));
+	list_games[indG].vezeni[indHracLobby] = 0;
+	
+	//!!Mozna chyba s cenou, pokud by hrac co opousti nastavil moc velkou cenu,
+	//Tak zbyvajici hrac by na to prohral - musim vyzkouset
+	if(list_games[indG].aukce.auction == 1)
+	{
+		printf("LEAVE/DISCON GAME - hrac co je natahu v aukci odchazi!\n");
+		makeActionPRUAuctionAfterLeave(indHracLobby, indH, &list_games[indG]);	
+	}
+	
+	if(list_games[indG].natahu == indHracLobby)
+	{
+		printf("LEAVE/DISCON GAME - hrac co je natahu odchazi!\n");
+		list_games[indG].vezeniLuck[indHracLobby] = 0;
+		//Nastavit noveho hrace
+		list_games[indG].natahu++;
+		if(list_games[indG].natahu == 4)
+		{
+			list_games[indG].natahu = 0;
+		}
+		int nasel = 1;
+		while(nasel)
+		{
+			if(list_games[indG].skipHraci[list_games[indG].natahu] == 1)
+			{
+				list_games[indG].natahu++;
+				if(list_games[indG].natahu == 4)
+				{
+					list_games[indG].natahu = 0;
+				}	
+			}
+			else
+			{
+				if(list_games[indG].penize[list_games[indG].natahu] <= 0)
+				{
+					list_games[indG].natahu++;
+					if(list_games[indG].natahu == 4)
+					{
+						list_games[indG].natahu = 0;
+					}
+				}
+				else
+				{
+					nasel = 0;
+				}
+			}
+		}
+			
+			
+		if(list_games[indG].jailFree == indHracLobby)
+		{
+			list_games[indG].jailFree = -1;
+		}
+		list_games[indG].hodStejnych = 0;	
+	}
+	//Zjistit, jestli nahodou uz neni posledni hrac ve hre,
+	//jinak poslat zpravu ze vyhral
+	int zbytek = 0;
+	int winInd = -1;
+	for(int i = 0; i < 4;i++)
+	{
+		if(list_games[indG].penize[i] > 0 && list_games[indG].skipHraci[i] == 0)
+		{
+			zbytek++;
+			winInd = i;
+		}
+	}
+	
+	//Odstraneni hrace z lobby
+	int zp = removePlayer(indH, indL);
+	//Nastavit hraci ze je ve stavu 1 = menu
+	hraci[indH].stav = 1;
+	sprintf(k.msg, "$left!%s!#\n", hraci[indH].jmeno);
+	broadcastToGame(&list_games[indG], cl, k.msg);
+	if(zbytek <= 1)//Posledni hrac
+	{
+		//Nastavit vsem hracum v lobby, ze jsou ve stavu 3
+		for(int i = 0; i < 4; i++)
+		{
+			if(lobbies[indL].hraciLobby[i] != -1)
+			{
+				hraci[lobbies[indL].hraciLobby[i]].stav = 3;
+			}
+		}
+		
+		sprintf(k.msg, "$game!win!%s!#\n", list_games[indG].jmena[winInd]);
+		broadcastToGame(&list_games[indG], cl, k.msg);
+		
+		//Vymazat hru ze seznamu her
+		removeGame(indG);
+		lobbies[indL].isLocked = 0;
+		
+		//smazani vsech ready na nulu
+		for(int p; p < 4; p++)
+		{
+			lobbies[indL].hraciReady[p] = 0;
+		}
+	}
+		
+	if(type == 1)	
+	{
+		sprintf(k.msg, "$discon!accept!#\n");
+		k.length = strlen(k.msg);
+		k.error = 100;
+		printf("%s", k.msg);
+		return k;
+	}
+	else
+	{
+		sprintf(k.msg, "$leave!accept!#\n");
+		k.length = strlen(k.msg);
+		k.error = 0;
+		printf("%s", k.msg);
+		return k;	
+	}	
+}
+
+struct Zprava gameAukceDone(int cl)
+{
+	struct Zprava k;
+	int indH = -1;
+	for(int i = 0;i < length_hraci;i++)
+	{
+		if(hraci[i].init == 1 && hraci[i].client_socket == cl)
+		{
+			indH = i;
+			break;
+		}
+	}
+	if(indH == -1)
+	{
+		printf("Chyba, hrac nebyl nalezen v seznamu hracu!\n");
+		sprintf(k.msg, "$aukce!add!error!5!#\n");
+		k.length = strlen(k.msg);
+		k.error = 5;
+		printf("%s", k.msg);
+		return k;
+	}
+	int indHracLobby = -1;//Pozice hrace v lobby <0,3>
+	int indL = -1;
+	for(int i = 0; i < length_lobbies; i++)
+	{
+		for(int j = 0; j < 4; j++)
+		{
+		if(lobbies[i].hraciLobby[j] == indH)
+		{
+			indHracLobby = j;
+			indL = i;
+			break;
+			}
+		}
+	}
+	if(indL == -1)
+	{
+		printf("Chyba, hrac se nenachazi v zadne lobby!\n");
+		sprintf(k.msg, "$aukce!add!error!6!#\n");
+		k.length = strlen(k.msg);
+		k.error = 6;
+		printf("%s", k.msg);
+		return k;	
+	}
+	int indG = -1;
+	for(int i = 0; i < length_list_games; i++)
+	{
+		if(lobbies[indL].idLobby == list_games[i].idLobby)
+		{
+			indG = i;
+			break;
+		}
+	}
+	if(indG == -1)
+	{
+		printf("Chyba, pro danou lobby neexistuje zadna hra!\n");
+		sprintf(k.msg, "$aukce!add!error!7!#\n");
+		k.length = strlen(k.msg);
+		k.error = 7;
+		printf("%s", k.msg);
+		return k;	
+	}
+	if(list_games[indG].aukce.auction == 1 && list_games[indG].aukce.aukceNatahu == indHracLobby)
+	{
+		makeActionPRUAuction(indHracLobby, indH, 0, -1, &list_games[indG]);
+		if(list_games[indG].aukce.auction == 2)
+		{
+			gameRulesPost(list_games[indG].natahu, lobbies[indL].hraciLobby[list_games[indG].natahu], &list_games[indG]);
+			int znova = 0;
+			if(list_games[indG].changeOfPlayers)
+			{
+				printf("change of Players true\n");
+				list_games[indG].changeOfPlayers = 1;
+				list_games[indG].anotherRun = 0;
+				znova = 1;
+				//Poslat zpravu o tom ze hrac ma hrat znovu 
+			}
+			if(list_games[indG].anotherRun == 1)
+			{
+				printf("another Run true\n");
+				znova = 1;
+				list_games[indG].anotherRun = 0;
+				//Poslat zpravu o tom ze hrac ma hrat znovu 
+			}
+			if(znova == 1)
+			{
+				sprintf(k.msg, "$game!again!#\n");
+			}
+			else
+			{
+				sprintf(k.msg, "$game!end!#\n");		
+			}
+			k.error = 0;
+			//!!
+			broadcastToLobby(lobbies[indL].hraciLobby, cl, k.msg);
+			k.length = strlen(k.msg);
+			printf("%s", k.msg);
+			return k;
+		}	
+	}
+	else
+	{
+		printf("Chyba, aukce neni spustena nebo k ni nema pristup!\n");
+		printf("aukce: %d, natahu: %d hrac ma index ve hre: %d\n",list_games[indG].aukce.auction, list_games[indG].aukce.aukceNatahu, indHracLobby);
+		sprintf(k.msg, "$aukce!end!error!9!#\n");
+		k.length = strlen(k.msg);
+		k.error = 9;
+		printf("%s", k.msg);
+		return k;
+	}
+}
+
+void skipPlayerFromGame(int cl)
+{
+	int indH = -1;
+	for(int i = 0;i < length_hraci;i++)
+	{
+		if(hraci[i].init == 1 && hraci[i].client_socket == cl)
+		{
+			indH = i;
+			break;
+		}
+	}
+	if(indH == -1)
+	{
+		printf("Hrac se soketem %d, neni v seznamu hracu!\n", cl);
+		return;
+	}
+	int naselG = -1;
+	int pozG = -1;
+	for(int i = 0;i < length_list_games; i++)
+	{
+		for(int j = 0; j < 4; j++)
+		{
+			if(strcmp(list_games[i].jmena[j], hraci[indH].jmeno) == 0)
+			{
+				naselG = i;
+				pozG = j;
+			}
+		}
+	}
+	if(naselG != -1)
+	{	
+		printf("Hrac se soketem %d, se nachazel ve hre, nyni se nastavuje ze je neaktivni!\n", cl);
+		//pokud je ve hre spustena aukce, je nutne u ni nastavit, ze uz v aukci nemuze hrat
+		//Musim zde pustit kod, jako kdyby prislo game!aukce!done - aby v pripade ze tento
+		//hrac skoncil aukci a zbyl posledni hrac, tak aby tyto veci probehly hladce
+		if(list_games[naselG].aukce.auction == 1)
+		{
+			printf("Hra je ve stavu aukce, je nutne hrace z aukce odebrat!\n");
+			struct Zprava h = gameAukceDone(cl);
+			if(h.error < 5)
+			{
+				send(cl, &h.msg, strlen(h.msg), 0);
+			}
+		}
+		
+		printf("Hrac je nyni nastaven na offline!\n");
+		list_games[naselG].skipHraci[pozG] = 1;
+		char zp[75];
+		memset(&zp, '\0', sizeof(zp));
+		sprintf(zp, "$skip!%s!#\n", list_games[naselG].jmena[pozG]);
+		broadcastToGame(&list_games[naselG], cl, zp);
+	}
+	else
+	{
+		printf("Hrac se soketem %d, co mu hra spadla neni v zadne hre.\n", cl);
+	}
+}
+
 /**
  * Funkce, ktera na zaklade prijmute zpravy dekoduje,
  * co s ni ma provest a nasledne danou akci provede
@@ -466,25 +833,35 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z, int cl)
 			char x[2];
 			sprintf(x, "%d!", lobbies[inL].pocetHracu);
 			strcat(k.msg, x);
+			char rdT[15];
+			memset(&rdT, '\0', sizeof(rdT));
 			int aktPocet = 0;
 			for(int i = 0;i < 4;i++)
 			{
 				int y = lobbies[inL].hraciLobby[i];
+				int rd = lobbies[inL].hraciReady[i];
 				if(y >= 0)
 				{
 					strcat(k.msg, hraci[y].jmeno);
+					sprintf(rdT, "%s%d", rdT, rd);
 					aktPocet++;
 					if(aktPocet == lobbies[inL].pocetHracu)
 					{
-						strcat(k.msg, "!#\n");
+						strcat(k.msg, "!");
+						strcat(rdT, "!#\n");
 						break;		
 					}
 					else
 					{
-						strcat(k.msg, ",");	
+						strcat(k.msg, ",");
+						strcat(rdT, ",");	
 					}	
 				}
 			}
+			
+			//Pridat jak jsou hraci ready
+			strcat(k.msg, rdT);
+			
 			k.error = 0;
 		}
 		k.length = strlen(k.msg);
@@ -545,6 +922,9 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z, int cl)
 			//Poslat hracum v jiz pripojene lobby ze se hrac opdojil
 			char textL[100];
 			memset(&textL, 0, sizeof(textL));
+			sprintf(textL, "$ready!rem!%s!#\n", hraci[getHracIndex(cl)].jmeno);	
+			broadcastToLobby(lobbies[indL].hraciLobby, cl, textL);
+			
 			sprintf(textL, "$lobby!rem!%s!#\n", hraci[getHracIndex(cl)].jmeno);	
 			broadcastToLobby(lobbies[indL].hraciLobby, cl, textL);
 			
@@ -763,6 +1143,7 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z, int cl)
 			return k;
 		}
 		int indL = -1;
+		int indHracLobby = -1;
 		for(int i = 0; i < length_lobbies; i++)
 		{
 			for(int j = 0; j < 4; j++)
@@ -770,13 +1151,26 @@ struct Zprava rozdeleniZpravyLobby(struct Zprava z, int cl)
 				if(lobbies[i].hraciLobby[j] == indH)
 				{
 					indL = i;
+					indHracLobby = j;
 					break;
 				}
 			}
 		}
 		if(indL != -1)
 		{
+			//pokud je ready poslat unready
+			if(lobbies[indL].hraciReady[indHracLobby] == 1)
+			{
+				sprintf(k.msg, "$ready!rem!%s!#\n", hraci[indH].jmeno);	
+				broadcastToLobby(lobbies[indL].hraciLobby, cl, k.msg);
+			}
 			int returnValue = removePlayer(indH, indL);
+			
+			//!!Zde mozna chyba, mohl by dojit ve funkci nad k chybe a pak by se zprava nemohla poslat
+			//poslat vsem v lobby ze odesel
+			sprintf(k.msg, "$lobby!rem!%s!#\n", hraci[indH].jmeno);	
+			broadcastToLobby(lobbies[indL].hraciLobby, cl, k.msg);
+			
 			if(returnValue >= 1)
 			{
 				sprintf(k.msg, "$discon!decline!5!#\n");
@@ -1103,7 +1497,7 @@ struct Zprava rozdeleniZpravyHra(struct Zprava z, int cl)
 				int winInd = -1;
 				for(int b = 0; b < 4;b++)
 				{
-					if(list_games[indG].penize[b] > 0)
+					if(list_games[indG].penize[b] > 0 && list_games[indG].skipHraci[b] == 0)
 					{
 						zbytek++;
 						winInd = b;
@@ -1155,6 +1549,25 @@ struct Zprava rozdeleniZpravyHra(struct Zprava z, int cl)
 			{
 				sprintf(k.msg, "$game!aukce!start!%d!#\n", list_games[indG].poziceHracu[indHracLobby]);
 				k.error = 9;//Poslat zpravu jen tem, kteri nespustily aukci
+			}
+			else if(ret == 2)//hrac opustil hru
+			{
+				k = leaveAndDiscon(0, cl);
+				return k;
+			}
+			else if(ret == 3)//hrac dal disconnecy
+			{
+				k = leaveAndDiscon(1, cl);
+				return k;
+			}
+			else if(ret == 4)//Hraci to nechtene spadlo 
+			{
+				list_games[indG].skipHraci[indHracLobby] = 1;
+				sprintf(k.msg, "$skip!%s!#\n", list_games[indG].jmena[indHracLobby]);
+				broadcastToLobby(lobbies[indL].hraciLobby, cl, k.msg);
+				
+				sprintf(k.msg, "$game!end!#\n");
+				k.error = 100;//Odpojit od serveru
 			}
 			broadcastToLobby(lobbies[indL].hraciLobby, cl, k.msg);
 			k.length = strlen(k.msg);
@@ -1273,113 +1686,8 @@ struct Zprava rozdeleniZpravyHra(struct Zprava z, int cl)
 		}
 		else if(strcmp(forbuff, "end") == 0)
 		{
-			int indH = -1;
-			for(int i = 0;i < length_hraci;i++)
-			{
-				if(hraci[i].init == 1 && hraci[i].client_socket == cl)
-				{
-					indH = i;
-					break;
-				}
-			}
-			if(indH == -1)
-			{
-				printf("Chyba, hrac nebyl nalezen v seznamu hracu!\n");
-				sprintf(k.msg, "$aukce!add!error!5!#\n");
-				k.length = strlen(k.msg);
-				k.error = 5;
-				printf("%s", k.msg);
-				return k;
-			}
-			int indHracLobby = -1;//Pozice hrace v lobby <0,3>
-			int indL = -1;
-			for(int i = 0; i < length_lobbies; i++)
-			{
-				for(int j = 0; j < 4; j++)
-				{
-					if(lobbies[i].hraciLobby[j] == indH)
-					{
-						indHracLobby = j;
-						indL = i;
-						break;
-					}
-				}
-			}
-			if(indL == -1)
-			{
-				printf("Chyba, hrac se nenachazi v zadne lobby!\n");
-				sprintf(k.msg, "$aukce!add!error!6!#\n");
-				k.length = strlen(k.msg);
-				k.error = 6;
-				printf("%s", k.msg);
-				return k;	
-			}
-			int indG = -1;
-			for(int i = 0; i < length_list_games; i++)
-			{
-				if(lobbies[indL].idLobby == list_games[i].idLobby)
-				{
-					indG = i;
-					break;
-				}
-			}
-			if(indG == -1)
-			{
-				printf("Chyba, pro danou lobby neexistuje zadna hra!\n");
-				sprintf(k.msg, "$aukce!add!error!7!#\n");
-				k.length = strlen(k.msg);
-				k.error = 7;
-				printf("%s", k.msg);
-				return k;	
-			}
-			if(list_games[indG].aukce.auction == 1 && list_games[indG].aukce.aukceNatahu == indHracLobby)
-			{
-				makeActionPRUAuction(indHracLobby, indH, 0, -1, &list_games[indG]);
-				if(list_games[indG].aukce.auction == 2)
-				{
-					gameRulesPost(list_games[indG].natahu, lobbies[indL].hraciLobby[list_games[indG].natahu], &list_games[indG]);
-					int znova = 0;
-					if(list_games[indG].changeOfPlayers)
-					{
-						printf("change of Players true\n");
-						list_games[indG].changeOfPlayers = 1;
-						list_games[indG].anotherRun = 0;
-						znova = 1;
-						//Poslat zpravu o tom ze hrac ma hrat znovu 
-					}
-					if(list_games[indG].anotherRun == 1)
-					{
-						printf("another Run true\n");
-						znova = 1;
-						list_games[indG].anotherRun = 0;
-						//Poslat zpravu o tom ze hrac ma hrat znovu 
-					}
-					if(znova == 1)
-					{
-						sprintf(k.msg, "$game!again!#\n");
-					}
-					else
-					{
-						sprintf(k.msg, "$game!end!#\n");		
-					}
-					k.error = 0;
-					//!!
-					broadcastToLobby(lobbies[indL].hraciLobby, cl, k.msg);
-					k.length = strlen(k.msg);
-					printf("%s", k.msg);
-					return k;
-				}	
-			}
-			else
-			{
-				printf("Chyba, aukce neni spustena nebo k ni nema pristup!\n");
-				printf("aukce: %d, natahu: %d hrac ma index ve hre: %d\n",list_games[indG].aukce.auction, list_games[indG].aukce.aukceNatahu, indHracLobby);
-				sprintf(k.msg, "$aukce!add!error!9!#\n");
-				k.length = strlen(k.msg);
-				k.error = 9;
-				printf("%s", k.msg);
-				return k;
-			}
+			k = gameAukceDone(cl);
+			return k;//!! mozna zde chyba
 		}
 		else
 		{
@@ -1391,176 +1699,15 @@ struct Zprava rozdeleniZpravyHra(struct Zprava z, int cl)
 	}
 	else if(strcmp(front, "leave") == 0 || strcmp(front, "discon") == 0)
 	{
-		int indH = -1;
-		for(int i = 0;i < length_hraci;i++)
+		if(strcmp(front, "leave") == 0)
 		{
-			if(hraci[i].init == 1 && hraci[i].client_socket == cl)
-			{
-				indH = i;
-				break;
-			}
-		}
-		if(indH == -1)
-		{
-			printf("Chyba, hrac nebyl nalezen v seznamu hracu!\n");
-			sprintf(k.msg, "$%s!decline!5!#\n", front);
-			k.length = strlen(k.msg);
-			k.error = 5;
-			printf("%s", k.msg);
-			return k;
-		}
-		int indHracLobby = -1;//Pozice hrace v lobby <0,3>
-		int indL = -1;
-		for(int i = 0; i < length_lobbies; i++)
-		{
-			for(int j = 0; j < 4; j++)
-			{
-				if(lobbies[i].hraciLobby[j] == indH)
-				{
-					indHracLobby = j;
-					indL = i;
-					break;
-				}
-			}
-		}
-		if(indL == -1)
-		{
-			printf("Chyba, hrac se nenachazi v zadne lobby!\n");
-			sprintf(k.msg, "$%s!decline!6!#\n", front);
-			k.length = strlen(k.msg);
-			k.error = 6;
-			printf("%s", k.msg);
-			return k;	
-		}
-		int indG = -1;
-		for(int i = 0; i < length_list_games; i++)
-		{
-			if(lobbies[indL].idLobby == list_games[i].idLobby)
-			{
-				indG = i;
-				break;
-			}
-		}
-		if(indG == -1)
-		{
-			printf("Chyba, pro danou lobby neexistuje zadna hra!\n");
-			sprintf(k.msg, "$%s!decline!7!#\n", front);
-			k.length = strlen(k.msg);
-			k.error = 7;
-			printf("%s", k.msg);
-			return k;	
-		}
-		//Hrac odstranen ze hry
-		list_games[indG].anotherRun = 0;
-		memset(&list_games[indG].budovy[indHracLobby], '\0', sizeof(list_games[indG].budovy[indHracLobby]));
-		list_games[indG].changeOfPlayers = 0;//!!Nejsem si jist
-		list_games[indG].penize[indHracLobby] = -1;
-		list_games[indG].poziceHracu[indHracLobby] = -1;
-		memset(&list_games[indG].upgrady[indHracLobby], '\0', sizeof(list_games[indG].upgrady[indHracLobby]));
-		list_games[indG].vezeni[indHracLobby] = 0;
-		
-		//!!Mozna chyba s cenou, pokud by hrac co opousti nastavil moc velkou cenu,
-		//Tak zbyvajici hrac by na to prohral - musim vyzkouset
-		if(list_games[indG].aukce.auction == 1)
-		{
-			printf("LEAVE/DISCON GAME - hrac co je natahu v aukci odchazi!\n");
-			makeActionPRUAuctionAfterLeave(indHracLobby, indH, &list_games[indG]);	
-		}
-		
-		if(list_games[indG].natahu == indHracLobby)
-		{
-			printf("LEAVE/DISCON GAME - hrac co je natahu odchazi!\n");
-			list_games[indG].vezeniLuck[indHracLobby] = 0;
-			//Nastavit noveho hrace
-			list_games[indG].natahu++;
-			if(list_games[indG].natahu == 4)
-			{
-				list_games[indG].natahu = 0;
-			}
-			int nasel = 1;
-			while(nasel)
-			{
-				if(list_games[indG].penize[list_games[indG].natahu] <= 0)
-				{
-					list_games[indG].natahu++;
-					if(list_games[indG].natahu == 4)
-					{
-						list_games[indG].natahu = 0;
-					}
-				}
-				else
-				{
-					nasel = 0;
-				}
-			}
-			
-			
-			if(list_games[indG].jailFree == indHracLobby)
-			{
-				list_games[indG].jailFree = -1;
-			}
-			list_games[indG].hodStejnych = 0;	
-		}
-		//Zjistit, jestli nahodou uz neni posledni hrac ve hre,
-		//jinak poslat zpravu ze vyhral
-		int zbytek = 0;
-		int winInd = -1;
-		for(int i = 0; i < 4;i++)
-		{
-			if(list_games[indG].penize[i] > 0)
-			{
-				zbytek++;
-				winInd = i;
-			}
-		}
-		
-		//Odstraneni hrace z lobby
-		int zp = removePlayer(indH, indL);
-		//Nastavit hraci ze je ve stavu 1=menu
-		hraci[indH].stav = 1;
-		sprintf(k.msg, "$left!%s!#\n", hraci[indH].jmeno);
-		broadcastToGame(&list_games[indG], cl, k.msg);
-		if(zbytek <= 1)//Posledni hrac
-		{
-			//Nastavit vsem hracum v lobby, ze jsou ve stavu 3
-			for(int i = 0; i < 4; i++)
-			{
-				if(lobbies[indL].hraciLobby[i] != -1)
-				{
-					hraci[lobbies[indL].hraciLobby[i]].stav = 3;
-				}
-			}
-			
-			sprintf(k.msg, "$game!win!%s!#\n", list_games[indG].jmena[winInd]);
-			broadcastToGame(&list_games[indG], cl, k.msg);
-			
-			//Vymazat hru ze seznamu her
-			removeGame(indG);
-			lobbies[indL].isLocked = 0;
-			
-			//smazani vsech ready na nulu
-			for(int p; p < 4; p++)
-			{
-				lobbies[indL].hraciReady[p] = 0;
-			}
-		}
-			
-		if(strcmp(front, "discon") == 0)	
-		{
-			sprintf(k.msg, "$discon!accept!#\n");
-			k.length = strlen(k.msg);
-			k.error = 100;
-			printf("%s", k.msg);
-			return k;
+			k = leaveAndDiscon(0, cl);	
 		}
 		else
 		{
-			sprintf(k.msg, "$leave!accept!#\n");
-			k.length = strlen(k.msg);
-			k.error = 0;
-			printf("%s", k.msg);
-			return k;	
+			k = leaveAndDiscon(1, cl);
 		}
+		return k;
 	}
 	else
 	{
@@ -1623,11 +1770,86 @@ void *serve_request(void *arg)
 		//JSEM UZ V MENU S LOBBY
 		addHrac(client_socket, jmeno);
 		printf("[%s]: se pripojil na server.\n", jmeno);
+		
+		//KONTROLA, JESTLI UZ NENI V NEJAKE HRE
+		int gamNasel = -1;
+		int skiped = -1;
+		for(int i = 0; i < length_list_games; i++)
+		{
+			for(int j = 0; j < 4; j++)
+			{
+				if(strcmp(list_games[i].jmena[j], jmeno) == 0)
+				{
+					gamNasel = i;
+					skiped = j;
+					break;			
+				}	
+			}
+		}
+		if(gamNasel != -1)
+		{
+			char t[250];
+			printf("Prave pripojeny hrac %s bezduvodne opustil hru a pokousim se ho napojit zpet!\n", jmeno);
+			
+			int lobNasel = -1;
+			int idLob = list_games[gamNasel].idLobby;
+			for(int i = 0; i < length_lobbies; i++)
+			{
+				if(lobbies[i].idLobby == idLob)
+				{
+					lobNasel = i;
+					break;
+				}
+			}
+			if(lobNasel != -1)
+			{
+				printf("Hrac nemuzu byt pridan do hry, jelikoz se nenasla zadna lobby spojena s hrou!\n");
+			}
+			else
+			{
+				memset(&t, '\0', sizeof(t));
+				sprintf(t, "$continue!lobby!%d!", lobbies[lobNasel].pocetHracu);
+				int aktPocet = 0;
+				for(int i = 0;i < 4;i++)
+				{
+					int y = lobbies[lobNasel].hraciLobby[i];
+					if(y >= 0)
+					{
+						strcat(t, hraci[y].jmeno);
+						aktPocet++;
+						if(aktPocet == lobbies[lobNasel].pocetHracu)
+						{
+							strcat(t, "!#\n");
+							break;		
+						}
+						else
+						{
+							strcat(t, ",");	
+						}	
+					}
+				}
+				printf("Posilam hraci informace o lobby!\n");
+				send(client_socket, &t, strlen(t), 0);
+				
+				memset(&t, '\0', sizeof(t));
+				sprintf(t, "$continue!start|");
+				generateGameFullStats(t, 250, &lobbies[lobNasel]);
+				strcat(t, "|#\n");
+				printf("Posilam hraci informace pro nastaveni hry!\n");
+				send(client_socket, &t, strlen(t), 0);
+				
+				printf("Meni stav hrace, ze je ve hre!\n");
+				hraci[getHracIndex(client_socket)].stav = 2;
+				
+				list_games[gamNasel].skipHraci[skiped] = 0;
+				printf("Ve hre opet nastaveno ze je hrac opet aktivni!\n");	
+			}
+		}	
+		
 		while(1)
 		{
 			z = getMessage(client_socket);
-			printf("Zprava zpracovana - ");
-			printf("erorr: %d\n", z.error);
+			printf("Zprava zpracovana - erorr: %d\n", z.error);
 			if(z.error == 0)
 			{
 				printf("\nPrijato: %s\n", z.msg);
@@ -1645,30 +1867,36 @@ void *serve_request(void *arg)
 						break;
 					}
 					int inLo = getIndexLobbyWhereIsHrac(getHracIndex(client_socket));
-					if(count == 0)
+					printf("inLo: %d\n", inLo);
+					for(int p = 0; p < length_lobbies; p++)
 					{
-						printf("Odpocet neni spusten\n");
-						if(isEveryoneReady(inLo) == 1)
+						printf("p: %d\n", p);
+						if(count == 0)
 						{
-							printf("count == 0, proslo\n");
-							//spustit countdown do zacatku hry a posli to vsem v lobby
-							broadcastToAllLobby(lobbies[inLo].hraciLobby, "$game!start!#\n");
-							printf("Odpocet je spusten!\n");
-							count = 1;
+							if(isEveryoneReady(p) == 1)
+							{
+								//printf("count == 0, proslo\n");
+								//spustit countdown do zacatku hry a posli to vsem v lobby
+								printf("%d %d %d %d\n", lobbies[p].hraciLobby[0], lobbies[p].hraciLobby[1], lobbies[p].hraciLobby[2], lobbies[p].hraciLobby[3]);
+								broadcastToAllLobby(lobbies[p].hraciLobby, "$game!start!#\n");
+								printf("Odpocet je spusten!\n");
+								count = 1;
+							}	
+						}
+						else
+						{
+							//Kontrolovat, jestli nekdo nedal unready nebo to nelavnul	
+							if(isEveryoneReady(p) == 0 && isSomeoneReadyLevel2(p) == 0)
+							{
+								//printf("count == 1, proslo\n");
+								printf("%d %d %d %d\n", lobbies[p].hraciLobby[0], lobbies[p].hraciLobby[1], lobbies[p].hraciLobby[2], lobbies[p].hraciLobby[3]);
+								broadcastToAllLobby(lobbies[p].hraciLobby, "$game!stop!#\n");
+								printf("Odpocet se zastavuje!\n");
+								count = 0;
+							}
 						}	
 					}
-					else
-					{
-						printf("Odpocet je spusten\n");
-						//Kontrolovat, jestli nekdo nedal unready nebo to nelavnul	
-						if(isEveryoneReady(inLo) == 0 && isSomeoneReadyLevel2(inLo) == 0)
-						{
-							printf("count == 1, proslo\n");
-							broadcastToAllLobby(lobbies[inLo].hraciLobby, "$game!stop!#\n");
-							printf("Odpocet se zastavuje!\n");
-							count = 0;
-						}
-					}
+					printf("Kontrola pocatku lobbyin probehla!\n");
 				}
 				else if(hraci[getHracIndex(client_socket)].stav == 2)
 				{
@@ -1710,6 +1938,12 @@ void *serve_request(void *arg)
 					printf("[%s]: se odpojil od serveru.\n", jmeno);
 					break;
 				}
+				else if(z.error == 50)
+				{
+					skipPlayerFromGame(client_socket);
+					printf("[%s]: se odpojil od serveru.\n", jmeno);
+					break;
+				}
 				else
 				{
 					printf("Error jiny: %d\n", z.error);
@@ -1722,7 +1956,7 @@ void *serve_request(void *arg)
 	close(client_socket);
 	
 	free(arg);
-	printf("UZIVATEL %s SE SOKETEM %d BYL ODPOJEN!\n", jmeno,client_socket);
+	printf("UZIVATEL %s SE SOKETEM %d BYL ODPOJEN!\n", jmeno, client_socket);
 	return 0;
 }
 
@@ -1732,25 +1966,38 @@ void signal_handler()
     if(server_socket) {
         close(server_socket);
     }
-    printf("SERVER SOCKET - uzavren\n");
+    printf("SERVER SOCKET - closed\n");
     
     uvolniWhitelist();
-    printf("WHITELIST - uvolnen\n");
+    printf("WHITELIST - released\n");
 	uvolniGameBoard();
-	printf("GAME_BOARD - uvolnen\n");
+	printf("GAME_BOARD - released\n");
 	uvolniGames();
-	printf("GAMES - uvolnen\n");
+	printf("GAMES - released\n");
 	uvolniLobby();
-	printf("LOBBY - uvolnen\n");
+	printf("LOBBY - released\n");
 	uvolniHrace();
-    printf("PLAYERS - uvolnen\n");
+    printf("PLAYERS - released\n");
     sleep(1);
     exit(0);
 }
 
 
-int main (void)
+int main(int argc, char *argv[])
 {
+	if(argc != 2)
+	{
+		printf("Spatne zadane parametry pro spusteni serveru!\n");
+		exit(0);
+	}
+	
+	int serPort = atoi(argv[1]);
+	if(serPort == 0)
+	{
+		printf("Spatne zadany port!\n");
+		exit(0);
+	}
+	
 	//NACTENI WHITELISTU
 	nactiFileSHesly(passwd);
 	//NACTENI POLE HRACU
@@ -1775,10 +2022,16 @@ int main (void)
 	
 	server_socket = socket(AF_INET, SOCK_STREAM, 0);
 	
+	if(setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int)) < 0)
+	{
+		printf("setsockopt(SO_REUSEADDR) failed!\n");
+		return -1;
+	}
+	
 	memset(&my_addr, 0, sizeof(struct sockaddr_in));
 	
 	my_addr.sin_family = AF_INET;
-	my_addr.sin_port = htons(8192);
+	my_addr.sin_port = htons(serPort);
 	my_addr.sin_addr.s_addr = INADDR_ANY;
 	
 	return_value = bind(server_socket, (struct sockaddr *) &my_addr, sizeof(struct sockaddr_in));

@@ -154,7 +154,10 @@ public class TestClient extends Thread
 			{
 				stavHrace = 2;
 				Monopoly.EndScreen.hide = true;
+				LobbyScreen.ready = false;
 				LobbyScreen.drawAllInfo = true;
+				LobbyScreen.setMaxRefDelay = true;
+				LobbyScreen.lobbies[LobbyScreen.selectedLobby].allUnready();
 				Monopoly.EndScreen.game.setScreen(Monopoly.LobbyScreen);
 				return 0;
 			}
@@ -322,12 +325,22 @@ public class TestClient extends Thread
 			if(input[0].equals("accept"))
 			{
 				String [] names = Assets.separeter(input[2], ',');
+				String [] readyP = Assets.separeter(input[3], ',');
 				//Pripojit se do lobby, o kterou jsem si predtim zazadal, prevzit hodnoty
 				int pocetL = Integer.parseInt(input[1]);
 				Monopoly.LobbyScreen.currentLobby = new String[4];
-				for (int i = 0; i < pocetL; i++)
+				for(int i = 0; i < pocetL; i++)
 				{
 					LobbyScreen.lobbies[LobbyScreen.selectedLobby].addPlayer(names[i]);
+					if(readyP[i].equals("1"))
+					{
+						LobbyScreen.lobbies[LobbyScreen.selectedLobby].setReady(i, true);						
+					}
+					else
+					{
+						LobbyScreen.lobbies[LobbyScreen.selectedLobby].setReady(i, false);
+					}
+					System.out.println(LobbyScreen.lobbies[LobbyScreen.selectedLobby].getReady()[i]);
 					Monopoly.LobbyScreen.currentLobby[i] = names[i];
 				}
 				LobbyScreen.drawAllInfo = true;
@@ -474,6 +487,71 @@ public class TestClient extends Thread
 			}
 			return 0;
 		}
+		else if(front.equals("continue"))
+		{
+			String [] info3 = Assets.separeter(back, '!');
+			String [] info4 = Assets.separeter(back, '|');
+			if(info3[0].equals("lobby"))
+			{
+				String [] names2 = Assets.separeter(info3[2], ',');
+				int pocetL = names2.length;
+				System.out.println(pocetL + " " + info3[1]);
+				LobbyScreen.lobbies = new Lobby[1];
+				LobbyScreen.lobbies[0] = new Lobby("default", 1);
+				
+				Monopoly.LobbyScreen.currentLobby = new String[4];
+				for(int i = 0; i < pocetL; i++)
+				{
+					LobbyScreen.lobbies[LobbyScreen.selectedLobby].addPlayer(names2[i]);
+					LobbyScreen.lobbies[LobbyScreen.selectedLobby].setReady(i, true);
+					Monopoly.LobbyScreen.currentLobby[i] = names2[i];
+				}
+				
+				GameScreen.waited = new int[pocetL];
+				
+				return 0;
+			}
+			else if(info4[0].equals("start"))
+			{	
+				System.out.println("pred startem hry " + info4[1]);
+				Assets.setGameStatusFull(info4[1]);
+				GameScreen.waiting = false;
+				
+				System.out.println(GameScreen.screenHraci.length);
+				System.out.println(Arrays.toString(GameScreen.screenHraci));
+				
+				//Vycistit buffer od zprav pro grafickou cast
+				GameScreen.gameInput.clear();
+				GameScreen.pack = false;
+				
+				//Vycistit vsechny promene
+				GameScreen.hodStejnych = 0;
+				GameScreen.changeOfPlayers = new boolean[1];
+				GameScreen.startRound = true;
+				GameScreen.notClick = false;
+				GameScreen.delay = 0;
+				GameScreen.statsDelay = 0;
+				GameScreen.chestChance = false;
+				GameScreen.aukce = false;
+				
+				GameScreen.skipHraci = new int[GameScreen.screenHraci.length];
+				GameScreen.moneyDelay = new int[GameScreen.screenHraci.length];
+				GameScreen.lastThrow = new int[GameScreen.screenHraci.length][2];
+				for (int i = 0; i < GameScreen.lastThrow.length; i++)
+				{
+					GameScreen.lastThrow[i][0] = -1;
+					GameScreen.lastThrow[i][1] = -1;
+				}
+				GameScreen.identifyPlayer();
+				return 0;
+			}
+			else
+			{
+				System.out.println("Error - predana zprava neobsahuje zadny z parametru, ktere by\n"
+						+ "program znal " + instrukce);
+				return -1;
+			}
+		}
 		else
 		{
 			System.out.println("Neznama zprava " + instrukce);
@@ -573,11 +651,39 @@ public class TestClient extends Thread
 			}
 			else if(info[0].equals("get"))
 			{
-				Table.transmission("g!" + info[1] + "!" + info[2] + "!");
+				int indP = -1;
+				for(int i = 0; i < GameScreen.screenHraci.length; i++)
+				{
+					System.out.println();
+					if(GameScreen.screenHraci[i].getName().equals(info[1]))
+					{
+						indP = i;
+						break;
+					}
+				}
+				if(indP == -1)
+				{
+					System.out.println("Hrac nebyl nalezen v seznamu hracu(" + info[1] + ")");
+				}
+				Table.transmission("g!" + indP + "!" + info[2] + "!");
 			}
 			else if(info[0].equals("pay"))
 			{
-				Table.transmission("p!" + info[1] + "!" + info[2] + "!");
+				
+				int indP = -1;
+				for(int i = 0; i < GameScreen.screenHraci.length; i++)
+				{
+					if(GameScreen.screenHraci[i].getName().equals(info[1]))
+					{
+						indP = i;
+						break;
+					}
+				}
+				if(indP == -1)
+				{
+					System.out.println("Hrac nebyl nalezen v seznamu hracu(" + info[1] + ")");
+				}
+				Table.transmission("p!" + indP + "!" + info[2] + "!");
 			}
 			else if(info[0].equals("buy"))
 			{
@@ -587,7 +693,20 @@ public class TestClient extends Thread
 				}
 				else
 				{
-					Table.transmission("b!" + info[1] + "!" + info[2] + "!");	
+					int indP = -1;
+					for(int i = 0; i < GameScreen.screenHraci.length; i++)
+					{
+						if(GameScreen.screenHraci[i].getName().equals(info[1]))
+						{
+							indP = i;
+							break;
+						}
+					}
+					if(indP == -1)
+					{
+						System.out.println("Hrac nebyl nalezen v seznamu hracu(" + info[1] + ")");
+					}
+					Table.transmission("b!" + indP + "!" + info[2] + "!");	
 				}
 			}
 			else if(info[0].equals("chest"))
@@ -604,7 +723,20 @@ public class TestClient extends Thread
 			}
 			else if(info[0].equals("lose"))
 			{
-				Table.transmission("l!"+ info[1] + "!");
+				int indP = -1;
+				for(int i = 0; i < GameScreen.screenHraci.length; i++)
+				{
+					if(GameScreen.screenHraci[i].getName().equals(info[1]))
+					{
+						indP = i;
+						break;
+					}
+				}
+				if(indP == -1)
+				{
+					System.out.println("Hrac nebyl nalezen v seznamu hracu(" + info[1] + ")");
+				}
+				Table.transmission("l!"+ indP + "!");
 			}
 			else if(info[0].equals("win"))
 			{
@@ -646,8 +778,36 @@ public class TestClient extends Thread
 			}
 			else if(info[0].equals("start"))
 			{
+				System.out.println("pred startem hry " + info[1]);
 				Assets.setGameStatusFull(info[1]);
 				GameScreen.waiting = false;
+				
+				System.out.println(GameScreen.screenHraci.length);
+				System.out.println(Arrays.toString(GameScreen.screenHraci));
+				
+				//Vycistit buffer od zprav pro grafickou cast
+				GameScreen.gameInput.clear();
+				GameScreen.pack = false;
+				
+				//Vycistit vsechny promene
+				GameScreen.hodStejnych = 0;
+				GameScreen.changeOfPlayers = new boolean[1];
+				GameScreen.startRound = true;
+				GameScreen.notClick = false;
+				GameScreen.delay = 0;
+				GameScreen.statsDelay = 0;
+				GameScreen.chestChance = false;
+				GameScreen.aukce = false;
+				
+				GameScreen.skipHraci = new int[GameScreen.screenHraci.length];
+				GameScreen.moneyDelay = new int[GameScreen.screenHraci.length];
+				GameScreen.lastThrow = new int[GameScreen.screenHraci.length][2];
+				for (int i = 0; i < GameScreen.lastThrow.length; i++)
+				{
+					GameScreen.lastThrow[i][0] = -1;
+					GameScreen.lastThrow[i][1] = -1;
+				}
+				GameScreen.identifyPlayer();
 			}
 			else
 			{
@@ -657,12 +817,38 @@ public class TestClient extends Thread
 			}
 			return 0;
 		}
+		else if(front.equals("skip"))
+		{
+			String [] info5 = Assets.separeter(back, '!');
+			for(int i = 0; i < GameScreen.screenHraci.length; i++)
+			{
+				if(GameScreen.screenHraci[i].getName().equals(info5[0]))
+				{
+					GameScreen.skipHraci[i] = 1;
+				}
+			}
+			return 0;
+		}
+		else if(front.equals("reskip"))
+		{
+			String [] info5 = Assets.separeter(back, '!');
+			for(int i = 0; i < GameScreen.screenHraci.length; i++)
+			{
+				if(GameScreen.screenHraci[i].getName().equals(info5[0]))
+				{
+					GameScreen.skipHraci[i] = 0;
+				}
+			}
+			return 0;
+		}
 		else if(front.equals("leave"))
 		{
 			String [] info3 = Assets.separeter(back, '!');
 			if(info3[0].equals("accept"))
 			{
 				Monopoly.GameScreen.hide = true;
+				stavHrace = 2;
+				LobbyScreen.ready = false;
 				Monopoly.LoginScreen.game.setScreen(Monopoly.LobbyScreen);
 			}
 			else if(info3[0].equals("decline"))
@@ -690,7 +876,7 @@ public class TestClient extends Thread
 					break;
 				}			
 			}
-			for (int i = 0; i < Monopoly.LobbyScreen.currentLobby.length; i++)
+			for(int i = 0; i < Monopoly.LobbyScreen.currentLobby.length; i++)
 			{
 				if(Monopoly.LobbyScreen.currentLobby[i] != null)
 				{
@@ -701,7 +887,8 @@ public class TestClient extends Thread
 						break;
 					}
 				}
-			}		
+			}
+			LobbyScreen.lobbies[LobbyScreen.selectedLobby].removePlayer(info4[0]);
 			System.out.println("Hrac s nazvem "+info4[0]+" odesel!");
 			return 0;
 		}

@@ -34,6 +34,7 @@ struct Game* boostGames()
 	{
 		//pole
 		memcpy(moreGames[i].poziceHracu, list_games[i].poziceHracu, sizeof(list_games[i].poziceHracu));
+		memcpy(moreGames[i].skipHraci, list_games[i].skipHraci, sizeof(list_games[i].skipHraci));
 		memcpy(moreGames[i].penize, list_games[i].penize, sizeof(list_games[i].penize));
 		memcpy(moreGames[i].vezeni, list_games[i].vezeni, sizeof(list_games[i].vezeni));
 		memcpy(moreGames[i].chestIndex, list_games[i].chestIndex, sizeof(list_games[i].chestIndex));
@@ -87,6 +88,7 @@ struct Game* reduceGames(int index)
 		{
 			//pole
 			memcpy(lessGames[i].poziceHracu, list_games[i].poziceHracu, sizeof(list_games[i].poziceHracu));
+			memcpy(lessGames[i].skipHraci, list_games[i].skipHraci, sizeof(list_games[i].skipHraci));
 			memcpy(lessGames[i].penize, list_games[i].penize, sizeof(list_games[i].penize));
 			memcpy(lessGames[i].vezeni, list_games[i].vezeni, sizeof(list_games[i].vezeni));
 			memcpy(lessGames[i].chestIndex, list_games[i].chestIndex, sizeof(list_games[i].chestIndex));
@@ -151,6 +153,7 @@ int addGame(int idLob)
 	{
 		list_games[index].vezeniLuck[m] = 0;
 		list_games[index].poziceHracu[m] = 0;
+		list_games[index].skipHraci[m] = 0;
 		memset(&list_games[index].upgrady[m], '\0', sizeof(list_games[index].upgrady[m]));
 		memset(&list_games[index].budovy[m], '\0', sizeof(list_games[index].budovy[m]));
 		list_games[index].vezeni[m] = 0;

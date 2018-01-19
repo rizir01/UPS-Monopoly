@@ -218,10 +218,11 @@ int gameRules(int index, int indexHrace, struct Game* hra)
 			//index ve hre, index hrace v celkovem poli hracu, pozice hrace, konkretni hra
 			printf("%s, penize: %d, pozice: %d, misto: %s\n", hraci[indexHrace].jmeno, hra->penize[index], hra->poziceHracu[index], game_board[hra->poziceHracu[index]].nazev);
 			int re = makeAction(index, indexHrace, hra->poziceHracu[index], hra);
-			if(re == 1)
+			if(re >= 1)
 			{
-				return 1;
+				return re;
 			}
+			
 			//gameTable[hraci[index].getPosition()].action(hraci[index], hraci);
 			if(kostka1 == kostka2 && hra->vezeni[index] != 1)
 			{
@@ -255,7 +256,7 @@ int gameRules(int index, int indexHrace, struct Game* hra)
 		{
 			hra->changeOfPlayers = 1;
 			memset(&t, '\0', sizeof(t));
-			sprintf(t, "$game!lose!%d!#\n", index);
+			sprintf(t, "$game!lose!%s!#\n", hra->jmena[index]);
 			broadcastToAllGame(hra, t);
 			//TRANSMISSION!!!
 			//transmission("l!" + index + "!");
@@ -271,17 +272,28 @@ int gameRules(int index, int indexHrace, struct Game* hra)
 			int nasel = 1;
 			while(nasel)
 			{
-				if(hra->penize[hra->natahu] <= 0)
+				if(hra->skipHraci[hra->natahu] == 1)
 				{
 					hra->natahu++;
 					if(hra->natahu == 4)
 					{
 						hra->natahu = 0;
-					}
+					}	
 				}
 				else
 				{
-					nasel = 0;
+					if(hra->penize[hra->natahu] <= 0)
+					{
+						hra->natahu++;
+						if(hra->natahu == 4)
+						{
+							hra->natahu = 0;
+						}
+					}
+					else
+					{
+						nasel = 0;	
+					}
 				}
 			}
 			//!!
@@ -330,7 +342,7 @@ int gameRulesPost(int index, int indexHrace, struct Game* hra)
 	{
 		hra->changeOfPlayers = 1;
 		memset(&t, '\0', sizeof(t));
-		sprintf(t, "$game!lose!%d!#\n", index);
+		sprintf(t, "$game!lose!%s!#\n", hra->jmena[index]);
 		broadcastToAllGame(hra, t);
 		//TRANSMISSION!!!
 		//transmission("l!" + index + "!");
@@ -346,17 +358,28 @@ int gameRulesPost(int index, int indexHrace, struct Game* hra)
 		int nasel = 1;
 		while(nasel)
 		{
-			if(hra->penize[hra->natahu] <= 0)
+			if(hra->skipHraci[hra->natahu] == 1)
 			{
 				hra->natahu++;
 				if(hra->natahu == 4)
 				{
 					hra->natahu = 0;
-				}
+				}	
 			}
 			else
 			{
-				nasel = 0;
+				if(hra->penize[hra->natahu] <= 0)
+				{
+					hra->natahu++;
+					if(hra->natahu == 4)
+					{
+						hra->natahu = 0;
+					}
+				}
+				else
+				{
+					nasel = 0;	
+				}
 			}
 		}
 		//TRANSMISSION!!!
@@ -380,21 +403,21 @@ int makeAction(int index, int  indexHrace, int pozice, struct Game* hra)
 	switch(typ)
 	{
 		case 1:re = makeActionPRU(index, indexHrace, pozice, hra);
-		       if(re == 1)
+		       if(re > 0)
 			   {
-			   	   return 1;	
+			   	   return re;	
 			   }
 			   break;
 		case 2:re = makeActionPRU(index, indexHrace, pozice, hra);
-			   if(re == 1)
+			   if(re > 0)
 			   {
-			   	   return 1;	
+			   	   return re;	
 			   }
 		       break;
 		case 3:re = makeActionPRU(index, indexHrace, pozice, hra);
-			   if(re == 1)
+			   if(re > 0)
 			   {
-			   	   return 1;	
+			   	   return re;	
 			   }
 			   break;
 		case 4:makeActionChest(index, indexHrace, pozice, hra);
@@ -404,7 +427,7 @@ int makeAction(int index, int  indexHrace, int pozice, struct Game* hra)
 	    case 6:pay = game_board[pozice].cena;
 			   hra->penize[index] -= pay;
 			   memset(&t, '\0', sizeof(t));
-			   sprintf(t, "$game!pay!%d!%d!#\n", index, pay);
+			   sprintf(t, "$game!pay!%s!%d!#\n", hra->jmena[index], pay);
 			   broadcastToAllGame(hra, t);
 			   //TRANSMISSION!!!
 			   //Table.transmission("p!" + index + "!" + pay +  "!");
@@ -644,6 +667,14 @@ int rozdeleniZpravyBuyTmp(struct Zprava z, int cl)
 			return -1;
 		}
 	}
+	else if(strcmp(front, "leave") == 0)
+	{
+		return 3;	
+	}
+	else if(strcmp(front, "discon") == 0)
+	{
+		return 4;
+	}
 	else
 	{
 		return -1;
@@ -743,6 +774,7 @@ void makeActionPRUAuction(int index, int indexHrace, int typOdpovedi, int castka
 		{
 			if(hra->aukce.auctionPrice[hra->aukce.aukceNatahu] == -1)
 			{
+				//Pokud nehraje aukci ale penize ma, musim ho preskocit v klientovi
 				if(hra->penize[hra->aukce.aukceNatahu] > 0)
 				{
 					//Poslat ze ma skocit na dalsiho hrace
@@ -786,10 +818,10 @@ void makeActionPRUAuction(int index, int indexHrace, int typOdpovedi, int castka
 		sprintf(t, "$game!aukce!end!#\n");
 		broadcastToAllGame(hra, t);
 		memset(&t, '\0', sizeof(t));
-		sprintf(t, "$game!pay!%d!%d!#\n", index3, hra->aukce.auctionPrice[index3]);
+		sprintf(t, "$game!pay!%s!%d!#\n", hra->jmena[index3], hra->aukce.auctionPrice[index3]);
 		broadcastToAllGame(hra, t);
 		memset(&t, '\0', sizeof(t));
-		sprintf(t, "$game!buy!%d!%d!#\n", index3, hra->aukce.pozice);
+		sprintf(t, "$game!buy!%s!%d!#\n", hra->jmena[index3], hra->aukce.pozice);
 		broadcastToAllGame(hra, t);
 		hra->aukce.auction = 2;
 		//TRANSMISSION!!!
@@ -874,10 +906,10 @@ int makeActionPRUAuctionAfterLeave(int index, int indexHrace, struct Game* hra)
 		sprintf(t, "$game!aukce!end!#\n");
 		broadcastToAllGame(hra, t);
 		memset(&t, '\0', sizeof(t));
-		sprintf(t, "$game!pay!%d!%d!#\n", index3, hra->aukce.auctionPrice[index3]);
+		sprintf(t, "$game!pay!%s!%d!#\n", hra->jmena[index3], hra->aukce.auctionPrice[index3]);
 		broadcastToAllGame(hra, t);
 		memset(&t, '\0', sizeof(t));
-		sprintf(t, "$game!buy!%d!%d!#\n", index3, hra->aukce.pozice);
+		sprintf(t, "$game!buy!%s!%d!#\n", hra->jmena[index3], hra->aukce.pozice);
 		broadcastToAllGame(hra, t);
 		hra->aukce.auction = 2;
 		//TRANSMISSION!!!
@@ -918,12 +950,26 @@ int makeActionPRU(int index, int indexHrace, int pozice, struct Game* hra)
 		{
 			//Cekam na zpravu od Klienta
 			int cl = hraci[indexHrace].client_socket;
-			struct Zprava z = getMessage(cl);
+			int done2 = 1;
+			struct Zprava z;
+			while(done2 == 1)
+			{
+				z = getMessage(cl);
+				if(z.error == 0)
+				{
+					done2 = 0;
+				}
+				else if(z.error == 50)
+				{
+					printf("makeActionPRU hrac s indexem: %d se odpojil nechtene od serveru!", indexHrace);
+					return 4;
+				}
+			}
 			int coD = rozdeleniZpravyBuyTmp(z, cl);
 			//char in[10] = "k\n";
 			if(coD > -1)//!in.equals("") - Prijde prazdny retezec, opakuj cely proces
 			{
-				if(coD == 1)
+				if(coD == 1)//Koupit
 				{
 					if(hra->penize[index] - cenaPoz < 0)
 					{
@@ -940,10 +986,10 @@ int makeActionPRU(int index, int indexHrace, int pozice, struct Game* hra)
 						printf("%s koupil pozemek %s za %d.\n", hraci[indexHrace].jmeno, game_board[pozice].nazev, cenaPoz);
 						
 						memset(&t, '\0', sizeof(t));
-						sprintf(t, "$game!pay!%d!%d!#\n", index, cenaPoz);
+						sprintf(t, "$game!pay!%s!%d!#\n", hra->jmena[index], cenaPoz);
 						broadcastToAllGame(hra, t);
 						memset(&t, '\0', sizeof(t));
-						sprintf(t, "$game!buy!%d!%d!#\n", index, pozice);
+						sprintf(t, "$game!buy!%s!%d!#\n", hra->jmena[index], pozice);
 						broadcastToAllGame(hra, t);
 						done = 0;
 						//TRANSMISSION!!!
@@ -952,7 +998,7 @@ int makeActionPRU(int index, int indexHrace, int pozice, struct Game* hra)
 						//TRANSMISSION!!!
 					}
 				}
-				else if(coD == 2)
+				else if(coD == 2)//Aukce
 				{
 					//Nastavit return na 1, z duvodu preskoceni na aukce
 					hra->aukce.auction = 1;
@@ -967,6 +1013,10 @@ int makeActionPRU(int index, int indexHrace, int pozice, struct Game* hra)
 						{
 							hra->aukce.auctionPrice[i] = -1;
 						}
+						else if(hra->skipHraci[i] == 1)
+						{
+							hra->aukce.auctionPrice[i] = -1;
+						}
 						else
 						{
 							hra->aukce.auctionPrice[i] = 0;
@@ -975,6 +1025,14 @@ int makeActionPRU(int index, int indexHrace, int pozice, struct Game* hra)
 					}
 					done = 0;
 					return 1;
+				}
+				else if(coD == 3)//Leave
+				{
+					return 2;
+				}
+				else if(coD == 4)
+				{
+					return 3;
 				}
 			}
 		}
@@ -1042,10 +1100,10 @@ void makeActionPropertyOwned(int index, int indexHrace, int pozice, struct Game*
 		hra->penize[index4] += cast2;
 		hra->penize[index] -= cast2;
 		memset(&t, '\0', sizeof(t));
-		sprintf(t, "$game!pay!%d!%d!#\n", index, cast2);
+		sprintf(t, "$game!pay!%s!%d!#\n", hra->jmena[index], cast2);
 		broadcastToAllGame(hra, t);
 		memset(&t, '\0', sizeof(t));
-		sprintf(t, "$game!get!%d!%d!#\n", index4, cast2);
+		sprintf(t, "$game!get!%s!%d!#\n", hra->jmena[index4], cast2);
 		broadcastToAllGame(hra, t);
 		//TRANSMISSION!!!
 		//Table.transmission("p!"+ ind + "!" + this.getHousesAndHotelRent()[5] + "!");
@@ -1059,10 +1117,10 @@ void makeActionPropertyOwned(int index, int indexHrace, int pozice, struct Game*
 		hra->penize[index4] += cast3;
 		hra->penize[index] -= cast3;
 		memset(&t, '\0', sizeof(t));
-		sprintf(t, "$game!pay!%d!%d!#\n", index, cast3);
+		sprintf(t, "$game!pay!%s!%d!#\n", hra->jmena[index], cast3);
 		broadcastToAllGame(hra, t);
 		memset(&t, '\0', sizeof(t));
-		sprintf(t, "$game!get!%d!%d!#\n", index4, cast3);
+		sprintf(t, "$game!get!%s!%d!#\n", hra->jmena[index4], cast3);
 		broadcastToAllGame(hra, t);
 		//TRANSMISSION!!!
 		//Table.transmission("p!"+ ind + "!" + this.getHousesAndHotelRent()[houses] + "!");
@@ -1076,10 +1134,10 @@ void makeActionPropertyOwned(int index, int indexHrace, int pozice, struct Game*
 		hra->penize[index4] += cast4;
 		hra->penize[index] -= cast4;
 		memset(&t, '\0', sizeof(t));
-		sprintf(t, "$game!pay!%d!%d!#\n", index, cast4);
+		sprintf(t, "$game!pay!%s!%d!#\n", hra->jmena[index], cast4);
 		broadcastToAllGame(hra, t);
 		memset(&t, '\0', sizeof(t));
-		sprintf(t, "$game!get!%d!%d!#\n", index4, cast4);
+		sprintf(t, "$game!get!%s!%d!#\n", hra->jmena[index4], cast4);
 		broadcastToAllGame(hra, t);
 		//TRANSMISSION!!!
 		//Table.transmission("p!"+ ind + "!" + this.getHousesAndHotelRent()[0] * multi + "!");
@@ -1112,10 +1170,10 @@ void makeActionRailroadOwned(int index, int indexHrace, int pozice, struct Game*
 	hra->penize[index4] += castka;
 	hra->penize[index] -= castka;
 	memset(&t, '\0', sizeof(t));
-	sprintf(t, "$game!pay!%d!%d!#\n", index, castka);
+	sprintf(t, "$game!pay!%s!%d!#\n", hra->jmena[index], castka);
 	broadcastToAllGame(hra, t);
 	memset(&t, '\0', sizeof(t));
-	sprintf(t, "$game!get!%d!%d!#\n", index4, castka);
+	sprintf(t, "$game!get!%s!%d!#\n", hra->jmena[index4], castka);
 	broadcastToAllGame(hra, t);
 	//TRANSMISSION!!!
 	//Table.transmission("p!"+ ind + "!" + rent[suma - 1] + "!");
@@ -1151,10 +1209,10 @@ void makeActionUtilityOwned(int index, int indexHrace, int pozice, struct Game* 
 	hra->penize[index4] += zap;
 	hra->penize[index] -= zap;
 	memset(&t, '\0', sizeof(t));
-	sprintf(t, "$game!pay!%d!%d!#\n", index, zap);
+	sprintf(t, "$game!pay!%s!%d!#\n", hra->jmena[index], zap);
 	broadcastToAllGame(hra, t);
 	memset(&t, '\0', sizeof(t));
-	sprintf(t, "$game!get!%d!%d!#\n", index4, zap);
+	sprintf(t, "$game!get!%s!%d!#\n", hra->jmena[index4], zap);
 	broadcastToAllGame(hra, t);
 	//TRANSMISSION!!!
 	//Table.transmission("p!"+ ind + "!" + (kostka1 + kostka2)*multi[count - 1] + "!");

@@ -53,6 +53,7 @@ public class LobbyScreen implements Screen, InputProcessor
 	static Lobby [] lobbies;
 	
 	static int refreshDelay = 10000;
+	static boolean setMaxRefDelay = false;
 	
 	static int buttonClickDelay = 60;
 	
@@ -85,17 +86,25 @@ public class LobbyScreen implements Screen, InputProcessor
 	@Override
 	public void show()
 	{
-		hide = false;
 		Gdx.input.setInputProcessor(this);
+		hide = false;
 		selectedLobbyName = false;
 		lobbyName = "";
-		refreshDelay = 1;
+		if(setMaxRefDelay)
+		{
+			refreshDelay = 10000;
+			setMaxRefDelay = false;
+		}
+		else
+		{
+			refreshDelay = 1;			
+		}
 		buttonClickDelay = 25;
 	}
 	
 	public void processDelays()
 	{
-		if(refreshDelay <= 0)
+		if(refreshDelay <= 0 && !drawAllInfo)
 		{
 			refreshDelay = 10000;
 			//Monopoly.LoginScreen.sendToThread("GUI", "$refresh!0#");
@@ -485,13 +494,22 @@ public class LobbyScreen implements Screen, InputProcessor
 				{
 					//Monopoly.LoginScreen.sendToThread("GUI", "$leave!0#");
 					Monopoly.LoginScreen.tc.sendMessageToServer("$leave!0#");
-					Monopoly.LobbyScreen.lobbies[selectedLobby].removePlayer(LoginScreen.login);
+					lobbies[selectedLobby].removePlayer(LoginScreen.login);
 					slideBarY = 30;
 					slideY = 30;
 					drawAllInfo = false;
+					ready = false;
 					//selectedLobby = -1;
 					lobbyName = "";
 					buttonClickDelay = 25;
+					
+					//Zastavit casomiru a resetovat
+					if(countDown)
+					{
+						countDown = false;
+						timeC = 0;						
+					}
+					
 					refreshDelay = 5;
 				}
 				else if(isObjectTouched(touch, 730, height - 105, 200, 75))//READY
@@ -500,13 +518,13 @@ public class LobbyScreen implements Screen, InputProcessor
 					{
 						//Monopoly.LoginScreen.sendToThread("GUI", "$ready!0#");
 						Monopoly.LoginScreen.tc.sendMessageToServer("$ready!0#");
-						lobbies[selectedLobby].removeReady(Monopoly.LoginScreen.login);
+						lobbies[selectedLobby].removeReady(LoginScreen.login);
 					}
 					else
 					{
 						//Monopoly.LoginScreen.sendToThread("GUI", "$ready!1#");
 						Monopoly.LoginScreen.tc.sendMessageToServer("$ready!1#");
-						lobbies[selectedLobby].addReady(Monopoly.LoginScreen.login);
+						lobbies[selectedLobby].addReady(LoginScreen.login);
 					}
 					ready = !ready;
 					buttonClickDelay = 25;
@@ -549,6 +567,7 @@ public class LobbyScreen implements Screen, InputProcessor
 			Monopoly.LoginScreen.tc.sendMessageToServer("$discon!0#");
 			try
 			{
+				Monopoly.LoginScreen.rc.fell = false;
 				Monopoly.LoginScreen.rc.join(10);
 				Monopoly.LoginScreen.tc.bf.close();
 				Monopoly.LoginScreen.tc.bw.close();

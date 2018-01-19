@@ -139,6 +139,15 @@ public class Lobby
 		}
 	}
 	
+	public void allUnready()
+	{
+		for(int i = 0; i < ready.length; i++)
+		{
+			ready[i] = false;
+		}
+		System.out.println("all unready " + Arrays.toString(ready));
+	}
+	
 	public int getPocetHrau()
 	{
 		int vys = 0;
@@ -176,6 +185,11 @@ public class Lobby
 	public void setReady(boolean[] ready)
 	{
 		this.ready = ready;
+	}
+	
+	public void setReady(int index, boolean hod)
+	{
+		this.ready[index] = hod;
 	}
 	
 	public boolean isLocked()

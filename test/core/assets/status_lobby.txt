@@ -10,7 +10,7 @@ SERVER -> CLIENT
 $refresh!pocet_lobbyn!NazevLobby1, NazevLobby2, ...!LobbyLidi1, LobbyLidi2, ...!isLocked1, isLocked2, ...!# - poslani informaci o vsech lobby co na serveru jsou
 $create!accpet!# - potvrzeni vytvoreni lobby
 $create!decline!error_kod!# - zamitnuti vytvoreni lobby
-$join!accept!pocet_lidi!Hrac1, Hrac2, ...!# - potvrzeni k pripojeni se ke konkretni lobby s prislusnymi dalsimy informacemi
+$join!accept!pocet_lidi!Hrac1, Hrac2, ...!ready1, ready, ...!# - potvrzeni k pripojeni se ke konkretni lobby s prislusnymi dalsimy informacemi
 $join!decline!error_kod!# - zamitnuti pripojeni
 $ready!add!Hrac1!# - pridani, ze Hrac1 je ready
 $ready!rem!Hrac1!# - odebrani, ze Hrac1 je ready
@@ -19,3 +19,5 @@ $lobby!add!Hrac1!# - pridani hrace do pripojene lobby pro klienta
 $lobby!rem!Hrac1!# - odpojeni hrace z lobby pro konkretni pripojenou lobby
 $game!start!# - zacina odpocet do hry
 $game!stop!# - preruseni zacatku hry z duvodu unready nebo odpojeni hrace z lobby
+$continue!lobby!pocet lidi!Hrac1, Hrac2, ...!# - klient se dozvidi ze uz je v rozehrane hre a nastavi pocet lidi v lobby a jejich jmena
+$continue!start|Retezc se stavem hry|# - Hrac nasledne provede vsechny nastaveni do hry

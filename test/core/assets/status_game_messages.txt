@@ -16,10 +16,10 @@ $leave!accept!# - Povoleni opustit hru
 $leave!decline!cislo chyby!# - Nepovoleni opustit hru v momentalnim stavu
 $game!start!kostka1,kostka2!# - hrac hodil kostka1 a kostka2 a hra ma zacit pro konkretiho hrace
 $game!end!# - hrac ukoncil svuj tah
-$game!lose!index hrace!# - Hrac prohral hru, pokud je to ten samy jako klient, uz se nebude moct ucastnit hry
+$game!lose!nazev hrace!# - Hrac prohral hru, pokud je to ten samy jako klient, uz se nebude moct ucastnit hry
 $game!again!# - Z duovdy logicky, hry se muze stat, ze konkretni hrac musi hrat znova, proto tato zprava
-$game!pay!index hrace!castka!# - Index ztraci <castka>
-$game!buy!index hrace!pozice(index)!# - Hrac(nebo index) ziskava pozemek na indexu<pozice>
+$game!pay!nazev hrace!castka!# - Index ztraci <castka>
+$game!buy!nazev hrace!pozice(index)!# - Hrac(nebo index) ziskava pozemek na indexu<pozice>
 $game!gojail!# - pro podstavce goToJail presmerovani do veznice
 $game!aukce!start!pozice pozemku!# - zacatek aukce pro dany pozemek na pozici <pozemek>
 $game!aukce!done!index!#- hrac s <index> ukoncil ucast na aukci
@@ -27,8 +27,10 @@ $game!aukce!fail!cislo!# - pri ziskani hodnot od hrace byli zadany spatne parame
 $game!aukce!max!hodnota!# - Hrac zadal novou hodnotu za pozemek <hodnota>
 $game!aukce!next!# - Dalsi hrac v aukci v poradi
 $game!aukce!end!# - Ukonceni aukce
-$game!get!index hrace!castka!# - Hrac(index) ziskava <castka>
+$game!get!nazev hrace!castka!# - Hrac(index) ziskava <castka>
 $game!chest!stav!# - Hrac zpracuje ze <stav> co se ma provest z community chest
 $game!chance!stav!# - Hrac zpracuje ze <stav> co se ma provest z chance
 $game!buy!fail!# - Hrac ma nedostatek penez na ucte
-$game!win!nazev hrace!# - Vyhral hras s <indexem> a hra se premisti do obrazovky se statisikami 
+$game!win!nazev hrace!# - Vyhral hras s <indexem> a hra se premisti do obrazovky se statisikami
+$skip!nazev hrace! - Hracovi to spadlo, jeho hrani je pozastaveno
+$reskip!nazev hrace! - Hrac je opet obnoven zpet do hry

@@ -170,6 +170,7 @@ public class EndScreen implements Screen
 			Monopoly.LoginScreen.tc.sendMessageToServer("$discon!0#");
 			try
 			{
+				Monopoly.LoginScreen.rc.fell = false;
 				Monopoly.LoginScreen.rc.join(10);
 				Monopoly.LoginScreen.tc.bf.close();
 				Monopoly.LoginScreen.tc.bw.close();

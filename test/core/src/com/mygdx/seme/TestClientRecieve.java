@@ -7,12 +7,14 @@ import java.util.Vector;
 public class TestClientRecieve extends Thread
 {	
 	static final int MAXQUEUE = 7;
-	private Vector messages = new Vector();
+	private Vector<String> messages = new Vector<String>();
 	boolean done;
+	boolean fell;//Kdyz server spadnul
 	
 	public TestClientRecieve()
 	{
 		done = true;
+		fell = true;
 	}
 	
 	@Override
@@ -66,6 +68,22 @@ public class TestClientRecieve extends Thread
 		catch(IOException e)
 		{
 			e.printStackTrace();
+		}
+		
+		if(fell)
+		{
+			//Jenom pokud to spadne
+			Monopoly.EndScreen.hide = false;
+			Monopoly.LobbyScreen.hide = false;
+			Monopoly.GameScreen.hide = false;
+			
+			LobbyScreen.drawAllInfo = false;
+			LobbyScreen.countDown = false;
+			LobbyScreen.timeC = 0;
+			LobbyScreen.selectedLobby = -1;
+			LobbyScreen.ready = false;
+			
+			Monopoly.LobbyScreen.game.setScreen(Monopoly.LoginScreen);			
 		}
 		System.out.println("READING THREAD CLOSED");
 	}
