@@ -62,8 +62,8 @@ struct Game
 	//Pole, ktere v prvni bloku ma seznam vsech vlastnenych polozek
 	//daneho hrace a v druhem bloku pocet upgradu daneho pozemku, pokud
 	//jsou upgrady pritomny
-	char budovy[4][50];
-	char upgrady[4][50];
+	char budovy[4][100];
+	char upgrady[4][100];
 	
 	struct Aukce aukce;
 };

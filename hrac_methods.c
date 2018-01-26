@@ -296,7 +296,7 @@ int broadcastToAllLobby(int *hraciX, char *text)
 	{
 		if(hraciX[i] != -1)
 		{
-			printf("%d a sc: %d\n", hraciX[i], hraci[hraciX[i]].client_socket);
+			//printf("%d a sc: %d\n", hraciX[i], hraci[hraciX[i]].client_socket);
 			send(hraci[hraciX[i]].client_socket, &text1, strlen(text1), 0);
 		}
 	}

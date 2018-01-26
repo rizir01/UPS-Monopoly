@@ -295,17 +295,23 @@ struct Zprava leaveAndDiscon(int type, int cl)
 		sprintf(k.msg, "$game!win!%s!#\n", list_games[indG].jmena[winInd]);
 		broadcastToGame(&list_games[indG], cl, k.msg);
 		
+		printf("indG: %d\n", indG);
 		//Vymazat hru ze seznamu her
 		removeGame(indG);
-		lobbies[indL].isLocked = 0;
 		
-		//smazani vsech ready na nulu
-		for(int p; p < 4; p++)
+		printf("Game removed!\n");
+		lobbies[indL].isLocked = 0;
+		printf("Lobby unlocked!\n");
+		
+		//nastaveni vsech ready na nulu
+		for(int p = 0; p < 4; p++)
 		{
 			lobbies[indL].hraciReady[p] = 0;
 		}
+		printf("Lobby players ready reseted!\n");
 	}
-		
+	
+	printf("STAGE - FINAL MESSAGE!\n");	
 	if(type == 1)	
 	{
 		sprintf(k.msg, "$discon!accept!#\n");
@@ -398,15 +404,13 @@ struct Zprava gameAukceDone(int cl)
 				printf("change of Players true\n");
 				list_games[indG].changeOfPlayers = 1;
 				list_games[indG].anotherRun = 0;
-				znova = 1;
-				//Poslat zpravu o tom ze hrac ma hrat znovu 
+				znova = 1; 
 			}
 			if(list_games[indG].anotherRun == 1)
 			{
 				printf("another Run true\n");
 				znova = 1;
 				list_games[indG].anotherRun = 0;
-				//Poslat zpravu o tom ze hrac ma hrat znovu 
 			}
 			if(znova == 1)
 			{
@@ -1522,7 +1526,7 @@ struct Zprava rozdeleniZpravyHra(struct Zprava z, int cl)
 					lobbies[indL].isLocked = 0;
 					
 					//Nastavit vsem hracum v lobby ready =0
-					for(int p; p < 4; p++)
+					for(int p = 0; p < 4; p++)
 					{
 						lobbies[indL].hraciReady[p] = 0;
 					}
@@ -1854,7 +1858,7 @@ void *serve_request(void *arg)
 			{
 				printf("\nPrijato: %s\n", z.msg);
 				printf("Hrac cl: %d ma stav: %d\n", client_socket, hraci[getHracIndex(client_socket)].stav);
-				if(hraci[getHracIndex(client_socket)].stav == 1)
+				if(hraci[getHracIndex(client_socket)].stav == 1)//Menu
 				{
 					z = rozdeleniZpravyLobby(z, client_socket);
 					if(z.error < 5)
@@ -1898,7 +1902,7 @@ void *serve_request(void *arg)
 					}
 					printf("Kontrola pocatku lobbyin probehla!\n");
 				}
-				else if(hraci[getHracIndex(client_socket)].stav == 2)
+				else if(hraci[getHracIndex(client_socket)].stav == 2)//Hra
 				{
 					printf("Hrac je ve 2. stavu!\n");
 					z = rozdeleniZpravyHra(z, client_socket);
@@ -1935,12 +1939,14 @@ void *serve_request(void *arg)
 			{
 				if(z.error < 5 || z.error == 100)
 				{
+					leaveAndDiscon(1, client_socket);
 					printf("[%s]: se odpojil od serveru.\n", jmeno);
 					break;
 				}
 				else if(z.error == 50)
 				{
-					skipPlayerFromGame(client_socket);
+					leaveAndDiscon(1, client_socket);
+					//skipPlayerFromGame(client_socket);
 					printf("[%s]: se odpojil od serveru.\n", jmeno);
 					break;
 				}
@@ -1997,6 +2003,8 @@ int main(int argc, char *argv[])
 		printf("Spatne zadany port!\n");
 		exit(0);
 	}
+	serPort = abs(serPort);
+	printf("PORT SERVERU JE: %d\n", serPort);
 	
 	//NACTENI WHITELISTU
 	nactiFileSHesly(passwd);

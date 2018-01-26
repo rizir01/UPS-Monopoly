@@ -80,7 +80,7 @@ public class TestClientRecieve extends Thread
 			LobbyScreen.drawAllInfo = false;
 			LobbyScreen.countDown = false;
 			LobbyScreen.timeC = 0;
-			LobbyScreen.selectedLobby = -1;
+			//LobbyScreen.selectedLobby = -1;
 			LobbyScreen.ready = false;
 			
 			Monopoly.LobbyScreen.game.setScreen(Monopoly.LoginScreen);			

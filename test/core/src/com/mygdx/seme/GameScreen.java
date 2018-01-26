@@ -1,9 +1,9 @@
 package com.mygdx.seme;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
+import java.util.Vector;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputProcessor;
@@ -88,7 +88,7 @@ public class GameScreen implements Screen, InputProcessor
 	
 	
 	public static boolean pack = false;
-	public static ArrayList<String> gameInput = new ArrayList<String>();
+	public static Vector<String> gameInput = new Vector<String>();
 	
 	static Table vlakno;
 	
@@ -909,16 +909,13 @@ public class GameScreen implements Screen, InputProcessor
 					if(isObjectTouched(touch, widthA + widthEdges + widthInfoEdges, widthA + widthEdges + spaceInfoA + heightInfoA + 7, widthInfoA, heightButton))
 					{
 						//Zprava, ze chci pozemek koupit
-						//Monopoly.LoginScreen.sendToThread("GUI", "$game!buy#");
 						Monopoly.LoginScreen.tc.sendMessageToServer("$game!buy#");
-						//transmission("k");
 						notClick = true;
 						delaySet();
 					}
 					else if(isObjectTouched(touch, widthA + widthEdges + 2 * widthInfoEdges + widthInfoA, widthA + widthEdges + spaceInfoA + heightInfoA + 7, widthInfoB, heightButton))
 					{
 						//Zprava, ze chci o pozemek hrat v aukci
-						//Monopoly.LoginScreen.sendToThread("GUI", "$game!auction#");
 						Monopoly.LoginScreen.tc.sendMessageToServer("$game!auction#");
 						//transmission("a");
 						aukce = true;
@@ -1047,7 +1044,7 @@ public class GameScreen implements Screen, InputProcessor
 			{
 				if(isObjectTouched(touch, widthA + widthEdges + widthInfoEdges + widthInfoA + 7, widthA + widthEdges + widthInfoEdges + heightInfoB + 50, widthButton * 0.33f, heightButton))
 				{
-					if(bid < screenHraci[aukcePozice].getMoney())
+					if(bid < screenHraci[aukcePozice].getMoney() - 1)
 					{
 						bid++;						
 					}
@@ -1210,19 +1207,12 @@ public class GameScreen implements Screen, InputProcessor
 	{
 		if(pack)
 		{
-			/*
-			for (int i = 0; i < gameInput.size(); i++)
-			{
-				System.out.println(gameInput.get(i));
-			}
-			*/
-			String input = gameInput.get(0);
-			gameInput.remove(0);
+			String input = gameInput.firstElement();
+			gameInput.remove(input);
 			if(gameInput.size() == 0)
 			{
 				pack = false;
 			}
-			//System.out.println("PRESEL PRES gameInpput inicializaci " + input);
 			newStatus(input);
 		}
 	}
@@ -1444,6 +1434,32 @@ public class GameScreen implements Screen, InputProcessor
 				System.out.println("COMMUNITY CHEST - DONE");
 			    break;
 		case 'l':ind = Integer.parseInt(vstup[1]);
+				
+				//Vratit pozemky bance
+				for(int i = 0; i < screenTable.length; i++)
+				{
+					if(screenTable[i].getOwnPlayerID() == screenHraci[ind].getId())
+					{
+						screenTable[i].setOwnPlayerID(-1);
+					}
+				}
+				
+				System.out.println("Pozice: " + pozice);
+				//Nastaveni indexu hrace natahu
+				int poN = 0;
+				for(int i = 0; i < screenHraci.length; i++)
+				{
+					if(i != ind)
+					{
+						poN++;
+					}
+					else
+					{
+						break;
+					}
+				}
+				pozice = poN;
+		
 				Player [] newHraci = new Player[screenHraci.length - 1];
 				int [] newSkip = new int[screenHraci.length - 1];
 				int [] newMoneyDelay = new int[moneyDelay.length - 1];
@@ -1488,28 +1504,7 @@ public class GameScreen implements Screen, InputProcessor
 						}
 					}
 				}
-				//Nastaveni indexu hrace natahu
-				boolean nasel2 = true;
-				 while(nasel2)
-				 {
-					 if(skipHraci[pozice] == 1)
-					 {
-						 pozice++;
-						 if(pozice >= screenHraci.length)
-						 {
-							 pozice = 0;
-						 }
-						 continue;
-					 }
-					 else if(pozice >= screenHraci.length)
-					 {
-						 pozice = 0;
-					 }
-					 else
-					 {
-						 nasel2 = false;
-					 }
-				 }
+				System.out.println("Pozice se zmenila na: " + pozice);
 			    break;
 		case 'c':zmenaPozice = false;
 				switch(vstup[1].charAt(0))
@@ -1723,7 +1718,7 @@ public class GameScreen implements Screen, InputProcessor
 			try
 			{
 				Monopoly.LoginScreen.rc.fell = false;
-				Monopoly.LoginScreen.rc.join(10);
+				Monopoly.LoginScreen.rc.join(1);
 				Monopoly.LoginScreen.tc.bf.close();
 				Monopoly.LoginScreen.tc.bw.close();
 				Monopoly.LoginScreen.tc.socket.close();

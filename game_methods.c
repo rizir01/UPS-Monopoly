@@ -181,12 +181,46 @@ int gameRules(int index, int indexHrace, struct Game* hra)
 	//printf("Hrac " + hraci[index].getName() + " je na tahu!\n");
 	//System.out.println("Nachazi se na pozici: " + hraci[index].getPosition());
 	char t[50];
-	if(hra->hodStejnych == 3)
+	if(hra->hodStejnych >= 3)
 	{
 		hra->poziceHracu[index] = 10;
 		hra->vezeni[index] = 1;
 		printf("Hrac %s jde do vezeni!\n", hraci[indexHrace].jmeno);
 		hra->hodStejnych = 0;
+		
+		//Nastaveni dalsiho hrace, kdyz hrac uz po 3 hazel zasebou!
+		hra->natahu++;
+		if(hra->natahu == 4)
+		{
+			hra->natahu = 0;
+		}
+		int nasel = 1;
+		while(nasel)
+		{
+			if(hra->skipHraci[hra->natahu] == 1)
+			{
+				hra->natahu++;
+				if(hra->natahu == 4)
+				{
+					hra->natahu = 0;
+				}	
+			}
+			else
+			{
+				if(hra->penize[hra->natahu] <= 0)
+				{
+					hra->natahu++;
+					if(hra->natahu == 4)
+					{
+						hra->natahu = 0;
+					}
+				}
+				else
+				{
+					nasel = 0;	
+				}
+			}
+		}
 	}
 	else
 	{
@@ -258,6 +292,11 @@ int gameRules(int index, int indexHrace, struct Game* hra)
 			memset(&t, '\0', sizeof(t));
 			sprintf(t, "$game!lose!%s!#\n", hra->jmena[index]);
 			broadcastToAllGame(hra, t);
+			
+			//Vratit vlastnene pozemky bance
+			memset(&hra->upgrady[index], '\0', sizeof(hra->upgrady[index]));
+			memset(&hra->budovy[index], '\0', sizeof(hra->budovy[index]));
+			
 			//TRANSMISSION!!!
 			//transmission("l!" + index + "!");
 			//TRANSMISSION!!!
@@ -344,6 +383,11 @@ int gameRulesPost(int index, int indexHrace, struct Game* hra)
 		memset(&t, '\0', sizeof(t));
 		sprintf(t, "$game!lose!%s!#\n", hra->jmena[index]);
 		broadcastToAllGame(hra, t);
+		
+		//Vratit vlastnene pozemky bance
+		memset(&hra->upgrady[index], '\0', sizeof(hra->upgrady[index]));
+		memset(&hra->budovy[index], '\0', sizeof(hra->budovy[index]));
+			
 		//TRANSMISSION!!!
 		//transmission("l!" + index + "!");
 		//TRANSMISSION!!!
@@ -563,7 +607,7 @@ int isPRUOwned(int pozice, struct Game* hra)
 		if(hra->penize[i] > 0)
 		{
 			pthread_mutex_lock(&lockSep);
-			
+			printf("%d bud: %s\n", i, hra->budovy[i]);
 			separeter(hra->budovy[i], ',');
 			int delka = length_p;
 			char pom[delka][100];
@@ -1093,8 +1137,16 @@ void makeActionPropertyOwned(int index, int indexHrace, int pozice, struct Game*
 	
 	int house = atoi(pom3);
 	
+	printf("ceny: ");
+	for(int i = 0; i < 6; i++)
+	{
+		printf("%d ", game_board[pozice].zisky[i]);	
+	}
+	printf("\n");
+	
 	if(house == 6)//Pokud na danem pozmeku je jiz hotel
 	{
+		printf("1 zisky: %d a multi: %d\n", game_board[pozice].zisky[5], multi);
 		int cast2 = game_board[pozice].zisky[5];
 		printf("%s zaplati %s %d.\n", hraci[indexHrace].jmeno, hra->jmena[index4], cast2);
 		hra->penize[index4] += cast2;
@@ -1112,6 +1164,7 @@ void makeActionPropertyOwned(int index, int indexHrace, int pozice, struct Game*
 	}
 	else if(house > 0)//Jestli na danem pozemku jsou nejake domy
 	{
+		printf("2 zisky: %d a multi: %d\n", game_board[pozice].zisky[house], multi);
 		int cast3 = game_board[pozice].zisky[house];
 		printf("%s zaplati %s %d.\n", hraci[indexHrace].jmeno, hra->jmena[index4], cast3);
 		hra->penize[index4] += cast3;
@@ -1129,6 +1182,7 @@ void makeActionPropertyOwned(int index, int indexHrace, int pozice, struct Game*
 	}
 	else//Zakladni pozemek
 	{
+		printf("3 zisky: %d a multi: %d\n", game_board[pozice].zisky[0], multi);
 		int cast4 = game_board[pozice].zisky[0] * multi;
 		printf("%s zaplati %s %d.\n", hraci[indexHrace].jmeno, hra->jmena[index4], cast4);
 		hra->penize[index4] += cast4;
@@ -1758,102 +1812,3 @@ int uvolniGameBoard()
 {
 	free(game_board);
 }
-
-/**
-int main(void)
-{
-	initHraci();
-	initGames();
-	setupGameBoard();
-	
-	addHrac(10, "Michal");
-	addHrac(15, "Jirka");
-	addHrac(20, "Petr");
-	addHrac(25, "Zdenek");
-	
-	struct Lobby lobby;
-	lobby.hraciLobby[0] = 0;
-	lobby.hraciLobby[1] = 1;
-	lobby.hraciLobby[2] = 2;
-	lobby.hraciLobby[3] = 3;
-	lobby.pocetHracu = 4;
-	strcpy(lobby.lobbyName, "default");
-	int bi = addGame(lobby.idLobby);
-	
-	shuffleChanceCards(&list_games[bi]);
-	shuffleChestCards(&list_games[bi]);
-	setGameStatusFull("4!Michal?0?1500?0?0?0!Jirka?0?1500?0?0?0!Petr?0?1500?0?0?0!Zdenek?0?1500?0?0?0!0!", &list_games[bi]);
-	
-	printf("natahu: %d\n", list_games[bi].natahu);
-	for(int i = 0; i < 4; i++)
-	{
-		printf("%d penize: %d\n", i, list_games[bi].penize[i]);
-		printf("%d pozice: %d\n", i, list_games[bi].poziceHracu[i]);
-		printf("%d vezeni: %d\n", i, list_games[bi].vezeni[i]);
-		printf("%d budovy: %s\n", i, list_games[bi].budovy[i]);
-		printf("%d upgrady: %s\n", i, list_games[bi].upgrady[i]);
-		printf("---\n");
-	}
-	printf("CHEST\n");
-	for(int i = 0; i < 17; i++)
-	{
-		printf("%d, ", list_games[bi].chestIndex[i]);
-	}
-	printf("\n");
-	printf("CHANCE\n");
-	for(int i = 0; i < 16; i++)
-	{
-		printf("%d, ", list_games[bi].chanceIndex[i]);
-	}
-	printf("\n");
-	
-	takeChanceCard(&list_games[bi]);
-	takeChanceCard(&list_games[bi]);
-	takeChestCard(&list_games[bi]);
-	takeChestCard(&list_games[bi]);
-	printf("CHEST\n");
-	for(int i = 0; i < 17; i++)
-	{
-		printf("%d, ", list_games[bi].chestIndex[i]);
-	}
-	printf("\n");
-	printf("CHANCE\n");
-	for(int i = 0; i < 16; i++)
-	{
-		printf("%d, ", list_games[bi].chanceIndex[i]);
-	}
-	printf("\n");
-	
-	for(int j = 0; j < 5; j++)
-	{
-		for(int i = 0; i < 4; i++)
-		{
-			if(list_games[bi].penize > 0)
-			{
-				gameRules(i, lobby.hraciLobby[i], &list_games[bi]);
-				printf("\n");
-				if(list_games[bi].changeOfPlayers)
-				{
-					i--;
-					list_games[bi].changeOfPlayers = 1;
-					list_games[bi].anotherRun = 0;
-				}
-				if(list_games[bi].anotherRun == 1)
-				{
-					i--;
-					list_games[bi].anotherRun = 0;
-				}	
-			}
-		}	
-	}
-	
-	generateGameFullStats(&lobby);
-	
-	
-	uvolniHrace();	
-	uvolniGames();
-	uvolniGameBoard();
-}
-*/
-
-

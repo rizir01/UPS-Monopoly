@@ -101,9 +101,7 @@ public class EndScreen implements Screen
 			else if(isObjectTouched(touch, 610, 555, 300, 100))
 			{
 				//System.out.println("DISCON");
-				//Discon se posle z funkce hide(); !
-				hide = false;
-				game.setScreen(Monopoly.LoginScreen);
+				Monopoly.LoginScreen.tc.sendMessageToServer("$discon!0#");
 				buttonClickDelay = 25;
 			}
 		}

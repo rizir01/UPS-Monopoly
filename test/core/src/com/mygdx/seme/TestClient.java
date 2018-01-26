@@ -45,7 +45,7 @@ public class TestClient extends Thread
 	{
 		try
 		{
-			System.out.println("Posilam zpravu SERVERU: " + mess);
+			System.out.println("Posilam zpravu SERVERU: " + mess + " ve stavu " + stavHrace);
 			bw.write(mess.getBytes());
 		}catch (IOException e)
 		{
@@ -178,6 +178,7 @@ public class TestClient extends Thread
 			if(pole[0].equals("accept"))
 			{
 				Monopoly.EndScreen.hide = false;
+				LobbyScreen.drawAllInfo = false;
 				Monopoly.EndScreen.game.setScreen(Monopoly.LoginScreen);
 				return 0;
 			}
@@ -690,6 +691,7 @@ public class TestClient extends Thread
 				if(info[1].equals("fail"))
 				{
 					System.out.println("Nedostatek penez na ucte, vyberte moznost AUKCE!");
+					GameScreen.notClick = false;
 				}
 				else
 				{
@@ -779,6 +781,13 @@ public class TestClient extends Thread
 			else if(info[0].equals("start"))
 			{
 				System.out.println("pred startem hry " + info[1]);
+				//Pred startem hry promazat vlastnictvi budov
+				for(int i = 0; i < GameScreen.screenTable.length; i++)
+				{
+					GameScreen.screenTable[i].setOwnPlayerID(-1);
+				}
+				
+				//Nastavit momentalni stav hry
 				Assets.setGameStatusFull(info[1]);
 				GameScreen.waiting = false;
 				
